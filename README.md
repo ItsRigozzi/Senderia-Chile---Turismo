@@ -103,5 +103,8 @@ A diferencia del turista, el administrador tendrá acceso a funcionalidades rela
 **Ejemplo:**
 - **Rol**: Turista Registrado
 - **Proto-persona**: Viajero nacional de 28 años que planifica un viaje al sur de Chile desde su teléfono móvil, busca destinos por categoría, los guarda en sus favoritos y necesita ver la ubicación exacta de cada lugar en el mapa para organizar su ruta.
+---
 
 ---
+## Bocetos UI/UX
+[Figma - Prototipo de UI/UX](https://www.figma.com/design/yRcGT1RLb30dPo94QykQva/Senderia-chile?node-id=0-1&t=yAZn8pyTL7C6l2ac-1)
