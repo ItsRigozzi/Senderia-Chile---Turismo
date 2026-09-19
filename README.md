@@ -108,3 +108,26 @@ A diferencia del turista, el administrador tendrá acceso a funcionalidades rela
 ---
 ## Bocetos UI/UX
 [Figma - Prototipo de UI/UX](https://www.figma.com/design/yRcGT1RLb30dPo94QykQva/Senderia-chile?node-id=0-1&t=yAZn8pyTL7C6l2ac-1)
+---
+## Librerías y Tecnologías Usadas
+
+### Estilos y Maquetación
+- **Utilidades CSS de Ionic:** Uso de clases nativas del framework (ej. `ion-padding`, `ion-text-center`) para estructurar las vistas sin necesidad de librerías externas.
+- **CSS estándar / Estilos en línea:** Para ajustes visuales específicos de los componentes.
+
+### Librerías principales
+
+| Librería | Propósito |
+|---|---|
+| `react` | Construcción de la interfaz mediante componentes. |
+| `react-dom` | Renderizado de los componentes React en el navegador. |
+| `@ionic/react` | Proporciona los componentes de interfaz de Ionic utilizados en las vistas (ej. `IonPage`, `IonContent`, `IonCard`, `IonTabs`). |
+| `@ionic/react-router` | Integración de la navegación de Ionic con React Router. |
+| `react-router-dom` | Definición y gestión de rutas (v6), redirecciones y rutas protegidas entre las diferentes vistas de la aplicación. |
+| `ionicons` | Biblioteca de iconos nativos utilizada para la barra de navegación inferior (Tabs) y la interfaz en general. |
+
+### Tecnologías
+- **Ionic Framework**
+- **React**
+- **TypeScript**
+- **Vite** (Empaquetador y servidor de desarrollo local)
