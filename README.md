@@ -343,9 +343,115 @@ Los requerimientos no funcionales establecen condiciones de calidad que deberá 
 | RNF-ESC-01 | El sistema deberá utilizar una arquitectura modular que permita incrementar el volumen de destinos, categorías y usuarios, facilitando futuras mejoras sin modificar la lógica principal de la aplicación. |
 
 ---
+## 6. Arquitectura de la Información / UX
+
+### 6.1 Rutas principales y secundarias
+
+La aplicación considera rutas públicas (accesibles sin autenticación) y rutas protegidas (que requieren autenticación como administrador o turista registrado).
+
+#### Rutas públicas (Invitados)
+
+| Ruta | Vista | Descripción |
+|------|-------|-------------|
+| `/` | Inicio / Landing | Presenta la plataforma, acceso directo al mapa interactivo y a las categorías destacadas. |
+| `/explorar` | Mapa interactivo | Permite explorar destinos turísticos mediante el mapa de Google Maps con marcadores geolocalizados. |
+| `/destinos` | Catálogo de destinos | Presenta los destinos turísticos con opciones de búsqueda y filtrado por categoría y región. |
+| `/destinos/:id` | Detalle de destino | Permite visualizar la información completa de un destino turístico seleccionado. |
+| `/categorias/:slug` | Destinos por categoría | Presenta los destinos filtrados por una categoría específica. |
+| `/login` | Inicio de sesión | Permite ingresar al sistema mediante sus credenciales. |
+| `/registro` | Registro | Permite crear una nueva cuenta en la plataforma. |
+
+#### Rutas protegidas (Usuarios Logueados / Administrador)
+
+| Ruta | Vista | Descripción |
+|------|-------|-------------|
+| `/favoritos` | Mis Favoritos | Permite al turista registrado visualizar y gestionar sus destinos guardados. |
+| `/admin/inicio` | Panel de administración | Presenta un resumen general y accesos a las funcionalidades de gestión. |
+| `/admin/destinos` | Gestión de destinos | Permite consultar, buscar y gestionar los destinos turísticos registrados. |
+| `/admin/destinos/nuevo` | Crear destino | Permite registrar un nuevo destino turístico con toda su información. |
+| `/admin/destinos/:id/editar` | Editar destino | Permite modificar la información de un destino existente. |
+| `/admin/categorias` | Gestión de categorías | Permite consultar y gestionar las categorías de destinos. |
+| `/admin/usuarios` | Gestión de usuarios | Permite consultar y administrar los usuarios registrados del sistema. |
+
+### 6.2 Relaciones jerárquicas entre vistas
+
+La aplicación se organiza mediante una estructura jerárquica en la que las funcionalidades disponibles dependen del contexto del usuario.
+
+```
+Aplicación
+│
+├── Rutas públicas (Turista Invitado)
+│   ├── Inicio / Landing
+│   ├── Explorar (Mapa interactivo)
+│   ├── Destinos
+│   │   ├── Filtrado por categoría
+│   │   ├── Filtrado por región
+│   │   └── Detalle del destino
+│   ├── Login
+│   └── Registro
+│
+├── Rutas privadas (Turista Registrado)
+│   └── Mis Favoritos
+│
+└── Rutas protegidas (Administrador)
+├── Panel de administración
+├── Gestión de destinos
+│   ├── Listar
+│   ├── Crear
+│   └── Editar
+├── Gestión de categorías
+│   ├── Listar
+│   ├── Crear
+│   └── Editar
+└── Gestión de usuarios
+```
+
+---
+
+## 7. Diferenciación de acceso según roles
+
+La aplicación deberá controlar el acceso a las diferentes funcionalidades de acuerdo con el contexto del usuario. Esta diferenciación permitirá que cada tipo de usuario visualice y utilice únicamente las funciones asociadas a sus responsabilidades dentro del sistema.
+
+### Acceso del Turista Invitado
+
+El turista no registrado tendrá acceso a todas las funcionalidades de exploración y consulta **sin necesidad de autenticación**. Podrá navegar por el mapa, buscar destinos por filtros y ver información detallada de los lugares. Sin embargo, si intenta guardar un destino o acceder a la pestaña "Mis Favoritos", el sistema lo redirigirá obligatoriamente a la pantalla de Inicio de Sesión o Registro.
+
+### Acceso del Turista Registrado
+
+El turista autenticado mantendrá los permisos básicos de exploración y desbloqueará el uso del botón "Corazón" (Guardar) y la pestaña de "Mis Favoritos" en la barra de navegación inferior, permitiéndole armar su propia lista de destinos. También tendrá acceso a un apartado de perfil.
+
+### Acceso del Administrador
+
+El administrador será responsable de la gestión del contenido turístico y de las funciones generales del sistema. Solo él verá el botón de "Acceso Admin" que redirige al panel de control protegido, desde donde podrá gestionar el CRUD completo de la plataforma.
+
+### Matriz de acceso por rol
+
+| Funcionalidad | Turista Invitado | Turista Registrado | Administrador |
+|---------------|------------------|--------------------|---------------|
+| Explorar mapa y catálogo | ✓ | ✓ | ✓ |
+| Ver detalle de un destino | ✓ | ✓ | ✓ |
+| **Guardar en Favoritos** | **Bloqueado (Login)** | **✓** | **✓** |
+| Acceder a Perfil de Usuario | Bloqueado | ✓ | ✓ |
+| Panel de Administración | Oculto | Oculto | ✓ |
+| Crear/Editar/Eliminar destinos | Bloqueado | Bloqueado | ✓ |
+
+---
+
 ---
 ## Bocetos UI/UX
 [Figma - Prototipo de UI/UX](https://www.figma.com/design/yRcGT1RLb30dPo94QykQva/Senderia-chile?node-id=0-1&t=yAZn8pyTL7C6l2ac-1)
+
+El diseño actual muestra una interfaz consolidada para fines de demostración, pero el comportamiento real del sistema dependerá del estado de autenticación y el rol del usuario. Debido a que un wireframe es una representación estática, la pantalla principal agrupa todos los accesos posibles en una sola vista, lo que genera esta superposición temporal de elementos.
+### Lógica de Acceso y Condicionales del Sistema:
+- **Modo Invitado (Sin sesión):** Cualquier persona puede explorar el mapa y el catálogo de destinos de forma abierta. En este estado, hacer clic en el ícono de perfil redirige obligatoriamente a la pantalla de Inicio de Sesión o Registro.
+
+- **Modo Turista (Sesión iniciada):** Una vez que el turista se autentica, el sistema actualiza la interfaz. Al presionar el ícono de perfil, el usuario ya no será llevado al login, sino a un apartado personal (configuración de cuenta y preferencias, pendiente de diseño). Además, el botón "Acceso Admin" desaparece completamente de la vista, ya que el turista tiene el acceso restringido a las funcionalidades de gestión.
+
+- **Modo Administrador:** Si el usuario inicia sesión con credenciales institucionales, el sistema valida su rol. Solo bajo esta condición el botón "Acceso Admin" permanece visible y operativo, permitiendo saltar a las rutas protegidas para gestionar el contenido turístico.
+
+La presencia simultánea del botón "Acceso Admin" y el avatar de perfil en la pantalla web sirve exclusivamente para documentar dónde estarán ubicados los puntos de entrada para cada tipo de usuario. 
+En el desarrollo final con React, el código verificara si el usuario está logueado y qué rol tiene para ocultar o mostrar estos botones automáticamente.
+
 ---
 ## Librerías y Tecnologías Usadas
 
