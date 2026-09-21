@@ -475,3 +475,121 @@ En el desarrollo final con React, el código verificara si el usuario está logu
 - **React**
 - **TypeScript**
 - **Vite** (Empaquetador y servidor de desarrollo local)
+---
+
+## 8. Flujos principales de tareas
+
+Los flujos de tareas (task flows) representan la secuencia de acciones que realiza un usuario para completar una actividad específica dentro de la aplicación.
+
+### Task Flow 1: Exploración y consulta de destinos turísticos
+
+**Rol:** Turista  
+**Objetivo:** Explorar destinos turísticos en Chile y acceder a información detallada de un lugar de interés.
+
+```
+Acceso a la aplicación (sin login)
+        ↓
+Página de inicio
+        ↓
+¿Cómo desea explorar?
+  ↓              ↓
+Mapa         Catálogo
+  ↓              ↓
+Explorar       Buscar/filtrar
+mapa           por categoría
+interactivo    o región
+   ↓              ↓
+Visualizar     Visualizar
+marcadores     listado de
+en el mapa     destinos
+   ↓              ↓
+Seleccionar    Seleccionar
+marcador       destino
+   ↓              ↓
+Ver info       ─────┐
+resumida            │
+   ↓                ↓
+"Ver más"      Vista de detalle
+    ↓          del destino
+    └──────→   (fotos, descripción,
+                horarios, mapa,
+                ubicación)
+```
+
+### Task Flow 2: Creación y gestión de un destino turístico
+
+**Rol:** Administrador  
+**Objetivo:** Registrar un nuevo destino turístico en la plataforma para que pueda ser consultado por los turistas.
+
+```
+Inicio de sesión
+        ↓
+Panel de administración
+        ↓
+Gestión de destinos
+        ↓
+Consultar destinos existentes
+        ↓
+Seleccionar "Nuevo destino"
+        ↓
+Ingresar información del destino
+
+    -Nombre
+    -Descripción
+    -Categoría
+    -Región
+    -Horarios
+
+Condiciones de acceso
+        ↓
+Subir fotografías
+        ↓
+Seleccionar ubicación en mapa
+(clic en mapa para obtener coordenadas)
+        ↓
+Revisar información
+        ↓
+Guardar destino
+        ↓
+¿Datos válidos?
+    ↓          ↓
+    No         Sí
+    ↓           ↓
+  Mostrar      Registrar
+  errores      destino
+   de            ↓
+validación   Mostrar confirmación
+    ↓
+Volver al listado
+de destinos
+```
+
+---
+
+## 9. Puntos críticos de interacción
+
+Los puntos críticos de interacción corresponden a aquellas acciones o momentos del sistema en los que una interfaz poco clara, una validación insuficiente o una navegación compleja puede afectar significativamente la experiencia del usuario.
+
+### Para el Turista
+
+**Carga inicial del mapa interactivo:** El mapa constituye el elemento central de la experiencia del turista. La API de Google Maps deberá cargar de forma fluida, mostrando un estado de carga visible mientras los marcadores se posicionan. Si la carga falla (por problemas de conexión o de la API), el sistema deberá informar al usuario y ofrecer una alternativa (por ejemplo, acceder al catálogo de destinos sin mapa).
+
+**Interacción con marcadores del mapa:** Al hacer clic en un marcador, el usuario deberá recibir retroalimentación inmediata (popup o tarjeta con información resumida del destino). La información deberá ser legible, concisa y permitir acceder al detalle completo del destino. En dispositivos móviles, la interacción táctil con marcadores pequeños puede resultar difícil, por lo que el diseño deberá considerar áreas de toque adecuadas.
+
+**Búsqueda y filtrado de destinos:** Los filtros por categoría y región deberán ser fáciles de aplicar y combinar. El sistema deberá informar cuando no existan resultados para los filtros seleccionados y sugerir alternativas (ampliar la búsqueda, cambiar la categoría). La actualización de resultados deberá ser fluida y sin recargas innecesarias de la página.
+
+**Visualización de información detallada:** La vista de detalle de un destino deberá presentar la información de forma organizada y jerarquizada, evitando un bloque extenso de texto. Las fotografías deberán cargar progresivamente. La ubicación del destino deberá mostrarse en un mapa integrado en la misma vista. La información práctica (horarios, condiciones de acceso) deberá ser fácilmente identificable.
+
+**Gestión de Favoritos (Navegación Protegida):** Si un usuario invitado intenta agregar un lugar a sus favoritos, se debe garantizar que tras redirigirlo al inicio de sesión y completar el login, sea devuelto al destino que quería guardar, evitando que pierda el progreso de su búsqueda.
+
+### Para el Administrador
+
+**Inicio de sesión y acceso al panel:** El sistema deberá informar claramente cuando las credenciales ingresadas sean incorrectas y, una vez autenticado, deberá redirigir automáticamente al panel de administración. Deberá impedir el acceso a rutas administrativas sin autenticación válida.
+
+**Creación de destinos turísticos:** El formulario de creación deberá guiar al administrador de forma clara, indicando qué campos son obligatorios. La selección de ubicación mediante clic en mapa es un punto crítico: deberá ser intuitiva, mostrar las coordenadas seleccionadas y permitir ajustarlas. La carga de imágenes deberá mostrar progreso y confirmar cuando la operación se complete exitosamente.
+
+**Gestión de categorías:** La creación y modificación de categorías deberá reflejar los cambios de forma inmediata en la plataforma. Si se intenta eliminar una categoría que tiene destinos asociados, el sistema deberá advertir al administrador y solicitar confirmación.
+
+**Validación y retroalimentación:** Cada operación de creación, modificación o eliminación deberá proporcionar retroalimentación clara: confirmación de éxito, detalle de errores de validación, o advertencia antes de operaciones destructivas (eliminar un destino o categoría).
+
+---
