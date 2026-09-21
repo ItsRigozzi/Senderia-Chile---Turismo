@@ -553,7 +553,7 @@ Los puntos críticos de interacción corresponden a aquellas acciones o momentos
 
 ---
 
-## 10. Justificacion tecnica
+## 10. Justificación técnica
 La decisión de implementar el frontend de la plataforma Senderia Chile utilizando Ionic en conjunto con React responde a la necesidad de construir una herramienta sólida, mantenible y orientada a la experiencia del usuario. A continuación, se detallan los fundamentos técnicos de esta arquitectura:   
 
 **Usabilidad y diseño adaptable**: En cuanto a la usabilidad, la combinación de React con los componentes visuales de Ionic permite estructurar una interfaz nativamente responsiva que se adapta sin fricciones a entornos web de escritorio y dispositivos móviles. Esto resuelve directamente los requerimientos de diseño adaptable del proyecto (RNF-UX-01), dado que nuestros usuarios objetivo interactúan con la plataforma en contextos muy distintos: desde la planificación anticipada en un computador hasta la exploración en terreno utilizando un teléfono móvil.   
