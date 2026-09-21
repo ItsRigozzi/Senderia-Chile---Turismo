@@ -21,6 +21,8 @@ Proyecto del ramo Ingeniería Web y Móvil.
 8. [Flujos principales de tareas](#8-flujos-principales-de-tareas)
 9. [Puntos críticos de interacción](#9-puntos-críticos-de-interacción)
 10. [Justificación técnica](#10-justificación-técnica)
+11. [Bocetos UI/UX](Bocetos-UI/UX)
+12. [Librerías y Tecnologías Usadas](Librerías-y-Tecnologías-Usadas)
 
 ---
 
