@@ -553,7 +553,16 @@ Los puntos críticos de interacción corresponden a aquellas acciones o momentos
 
 ---
 
-aca punto 10
+## 10. Justificacion tecnica
+La decisión de implementar el frontend de la plataforma Senderia Chile utilizando Ionic en conjunto con React responde a la necesidad de construir una herramienta sólida, mantenible y orientada a la experiencia del usuario. A continuación, se detallan los fundamentos técnicos de esta arquitectura:   
+
+**Usabilidad y diseño adaptable**: En cuanto a la usabilidad, la combinación de React con los componentes visuales de Ionic permite estructurar una interfaz nativamente responsiva que se adapta sin fricciones a entornos web de escritorio y dispositivos móviles. Esto resuelve directamente los requerimientos de diseño adaptable del proyecto (RNF-UX-01), dado que nuestros usuarios objetivo interactúan con la plataforma en contextos muy distintos: desde la planificación anticipada en un computador hasta la exploración en terreno utilizando un teléfono móvil.   
+
+**Eficiencia de interacción**: Para garantizar una experiencia fluida, la arquitectura se apoya en React Router para gestionar la navegación. Al operar como una Single Page Application (SPA), el sistema maneja las transiciones entre las distintas vistas sin realizar recargas completas del navegador. Esta decisión técnica es crítica para nuestro dominio de aplicación, ya que evita que el mapa interactivo (que representa una carga pesada de recursos) se reinicie innecesariamente al cambiar de sección o aplicar filtros de búsqueda, protegiendo así el rendimiento de la aplicación y la experiencia de exploración del turista.   
+
+**Claridad estructural del código**: Desde la perspectiva del trabajo colaborativo y la mantenibilidad, hemos establecido una arquitectura basada en la separación estricta de responsabilidades. El código base se organizó en directorios específicos de manera modular: pages para contener las vistas principales, components para los fragmentos de interfaz gráfica reutilizables, routes para centralizar la lógica de navegación, y services para aislar el consumo de la API y la lógica de negocio. Esta estructura no solo facilita la lectura del proyecto, sino que permite que los distintos integrantes del equipo trabajen de forma paralela minimizando los conflictos de integración.   
+
+**Escalabilidad de la arquitectura frontend**: Finalmente, la escalabilidad del sistema está asegurada por el paradigma de desarrollo basado en componentes de React y los contenedores estructurales de Ionic (tales como IonPage, IonContent e IonTabs). Si el proyecto demanda crecimiento en el futuro como la incorporación de nuevas herramientas para el panel de administración o nuevas vistas de interacción para los usuarios registrados, esta arquitectura permite acoplar nuevos módulos de manera independiente sin la necesidad de reestructurar la aplicación completa ni comprometer la estabilidad del código existente.
 
 ---
 ## Bocetos UI/UX
