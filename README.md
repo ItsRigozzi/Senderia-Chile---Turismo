@@ -436,47 +436,6 @@ El administrador será responsable de la gestión del contenido turístico y de 
 | Crear/Editar/Eliminar destinos | Bloqueado | Bloqueado | ✓ |
 
 ---
-
----
-## Bocetos UI/UX
-[Figma - Prototipo de UI/UX](https://www.figma.com/design/yRcGT1RLb30dPo94QykQva/Senderia-chile?node-id=0-1&t=yAZn8pyTL7C6l2ac-1)
-
-El diseño actual muestra una interfaz consolidada para fines de demostración, pero el comportamiento real del sistema dependerá del estado de autenticación y el rol del usuario. Debido a que un wireframe es una representación estática, la pantalla principal agrupa todos los accesos posibles en una sola vista, lo que genera esta superposición temporal de elementos.
-### Lógica de Acceso y Condicionales del Sistema:
-- **Modo Invitado (Sin sesión):** Cualquier persona puede explorar el mapa y el catálogo de destinos de forma abierta. En este estado, hacer clic en el ícono de perfil redirige obligatoriamente a la pantalla de Inicio de Sesión o Registro.
-
-- **Modo Turista (Sesión iniciada):** Una vez que el turista se autentica, el sistema actualiza la interfaz. Al presionar el ícono de perfil, el usuario ya no será llevado al login, sino a un apartado personal (configuración de cuenta y preferencias, pendiente de diseño). Además, el botón "Acceso Admin" desaparece completamente de la vista, ya que el turista tiene el acceso restringido a las funcionalidades de gestión.
-
-- **Modo Administrador:** Si el usuario inicia sesión con credenciales institucionales, el sistema valida su rol. Solo bajo esta condición el botón "Acceso Admin" permanece visible y operativo, permitiendo saltar a las rutas protegidas para gestionar el contenido turístico.
-
-La presencia simultánea del botón "Acceso Admin" y el avatar de perfil en la pantalla web sirve exclusivamente para documentar dónde estarán ubicados los puntos de entrada para cada tipo de usuario. 
-En el desarrollo final con React, el código verificara si el usuario está logueado y qué rol tiene para ocultar o mostrar estos botones automáticamente.
-
----
-## Librerías y Tecnologías Usadas
-
-### Estilos y Maquetación
-- **Utilidades CSS de Ionic:** Uso de clases nativas del framework (ej. `ion-padding`, `ion-text-center`) para estructurar las vistas sin necesidad de librerías externas.
-- **CSS estándar / Estilos en línea:** Para ajustes visuales específicos de los componentes.
-
-### Librerías principales
-
-| Librería | Propósito |
-|---|---|
-| `react` | Construcción de la interfaz mediante componentes. |
-| `react-dom` | Renderizado de los componentes React en el navegador. |
-| `@ionic/react` | Proporciona los componentes de interfaz de Ionic utilizados en las vistas (ej. `IonPage`, `IonContent`, `IonCard`, `IonTabs`). |
-| `@ionic/react-router` | Integración de la navegación de Ionic con React Router. |
-| `react-router-dom` | Definición y gestión de rutas (v6), redirecciones y rutas protegidas entre las diferentes vistas de la aplicación. |
-| `ionicons` | Biblioteca de iconos nativos utilizada para la barra de navegación inferior (Tabs) y la interfaz en general. |
-
-### Tecnologías
-- **Ionic Framework**
-- **React**
-- **TypeScript**
-- **Vite** (Empaquetador y servidor de desarrollo local)
----
-
 ## 8. Flujos principales de tareas
 
 Los flujos de tareas (task flows) representan la secuencia de acciones que realiza un usuario para completar una actividad específica dentro de la aplicación.
@@ -593,3 +552,44 @@ Los puntos críticos de interacción corresponden a aquellas acciones o momentos
 **Validación y retroalimentación:** Cada operación de creación, modificación o eliminación deberá proporcionar retroalimentación clara: confirmación de éxito, detalle de errores de validación, o advertencia antes de operaciones destructivas (eliminar un destino o categoría).
 
 ---
+
+aca punto 10
+
+---
+## Bocetos UI/UX
+[Figma - Prototipo de UI/UX](https://www.figma.com/design/yRcGT1RLb30dPo94QykQva/Senderia-chile?node-id=0-1&t=yAZn8pyTL7C6l2ac-1)
+
+El diseño actual muestra una interfaz consolidada para fines de demostración, pero el comportamiento real del sistema dependerá del estado de autenticación y el rol del usuario. Debido a que un wireframe es una representación estática, la pantalla principal agrupa todos los accesos posibles en una sola vista, lo que genera esta superposición temporal de elementos.
+### Lógica de Acceso y Condicionales del Sistema:
+- **Modo Invitado (Sin sesión):** Cualquier persona puede explorar el mapa y el catálogo de destinos de forma abierta. En este estado, hacer clic en el ícono de perfil redirige obligatoriamente a la pantalla de Inicio de Sesión o Registro.
+
+- **Modo Turista (Sesión iniciada):** Una vez que el turista se autentica, el sistema actualiza la interfaz. Al presionar el ícono de perfil, el usuario ya no será llevado al login, sino a un apartado personal (configuración de cuenta y preferencias, pendiente de diseño). Además, el botón "Acceso Admin" desaparece completamente de la vista, ya que el turista tiene el acceso restringido a las funcionalidades de gestión.
+
+- **Modo Administrador:** Si el usuario inicia sesión con credenciales institucionales, el sistema valida su rol. Solo bajo esta condición el botón "Acceso Admin" permanece visible y operativo, permitiendo saltar a las rutas protegidas para gestionar el contenido turístico.
+
+La presencia simultánea del botón "Acceso Admin" y el avatar de perfil en la pantalla web sirve exclusivamente para documentar dónde estarán ubicados los puntos de entrada para cada tipo de usuario. 
+En el desarrollo final con React, el código verificara si el usuario está logueado y qué rol tiene para ocultar o mostrar estos botones automáticamente.
+
+---
+## Librerías y Tecnologías Usadas
+
+### Estilos y Maquetación
+- **Utilidades CSS de Ionic:** Uso de clases nativas del framework (ej. `ion-padding`, `ion-text-center`) para estructurar las vistas sin necesidad de librerías externas.
+- **CSS estándar / Estilos en línea:** Para ajustes visuales específicos de los componentes.
+
+### Librerías principales
+
+| Librería | Propósito |
+|---|---|
+| `react` | Construcción de la interfaz mediante componentes. |
+| `react-dom` | Renderizado de los componentes React en el navegador. |
+| `@ionic/react` | Proporciona los componentes de interfaz de Ionic utilizados en las vistas (ej. `IonPage`, `IonContent`, `IonCard`, `IonTabs`). |
+| `@ionic/react-router` | Integración de la navegación de Ionic con React Router. |
+| `react-router-dom` | Definición y gestión de rutas (v6), redirecciones y rutas protegidas entre las diferentes vistas de la aplicación. |
+| `ionicons` | Biblioteca de iconos nativos utilizada para la barra de navegación inferior (Tabs) y la interfaz en general. |
+
+### Tecnologías
+- **Ionic Framework**
+- **React**
+- **TypeScript**
+- **Vite** (Empaquetador y servidor de desarrollo local)
