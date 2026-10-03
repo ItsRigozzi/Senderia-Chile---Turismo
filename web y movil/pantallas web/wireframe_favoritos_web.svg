@@ -1,0 +1,130 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" width="1440" height="900">
+  <defs>
+    <style>
+      .bg { fill: #F8FAFC; }
+      .nav-bg { fill: #FFFFFF; stroke: #E2E8F0; stroke-width: 1; }
+      .card { fill: #FFFFFF; stroke: #E2E8F0; stroke-width: 1; rx: 8px; }
+      .txt-brand { font-family: Inter, Helvetica, Arial, sans-serif; font-weight: 700; font-size: 20px; fill: #0F172A; }
+      .txt-title { font-family: Inter, Helvetica, Arial, sans-serif; font-weight: 700; font-size: 26px; fill: #0F172A; }
+      .txt-main { font-family: Inter, Helvetica, Arial, sans-serif; font-weight: 600; font-size: 14px; fill: #1E293B; }
+      .txt-muted { font-family: Inter, Helvetica, Arial, sans-serif; font-weight: 400; font-size: 13px; fill: #64748B; }
+      .badge { fill: #EEF2F6; rx: 4px; }
+      .badge-txt { font-family: Inter, Helvetica, Arial, sans-serif; font-weight: 600; font-size: 11px; fill: #475569; }
+      .btn-outline { fill: #FFFFFF; stroke: #CBD5E1; stroke-width: 1; rx: 6px; }
+      .btn-primary { fill: #0F172A; rx: 6px; }
+      .btn-primary-txt { font-family: Inter, Helvetica, Arial, sans-serif; font-weight: 600; font-size: 13px; fill: #FFFFFF; text-anchor: middle; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1440" height="900" class="bg" />
+
+  <!-- TOP NAVBAR -->
+  <g id="Navbar">
+    <rect width="1440" height="70" class="nav-bg" />
+    <circle cx="50" cy="35" r="14" fill="#0F172A" />
+    <path d="M44 38 L50 28 L56 38 Z" fill="#FFFFFF" />
+    <text x="74" y="42" class="txt-brand">Sendaria <tspan fill="#64748B" font-weight="400">Chile</tspan></text>
+
+    <!-- Nav links -->
+    <text x="380" y="41" class="txt-muted">Explorar Mapa</text>
+    <text x="510" y="41" class="txt-muted">Destinos</text>
+    <text x="610" y="41" class="txt-main" fill="#0F172A">Mis Favoritos (3)</text>
+    <rect x="605" y="66" width="105" height="4" fill="#0F172A" rx="2" />
+
+    <!-- User Profile Header Menu -->
+    <g transform="translate(1220, 17)">
+      <circle cx="18" cy="18" r="18" fill="#E2E8F0" />
+      <text x="18" y="22" font-family="Inter, sans-serif" font-weight="600" font-size="12" fill="#475569" text-anchor="middle">FV</text>
+      <text x="44" y="16" class="txt-main" font-size="13">Francisca V.</text>
+      <text x="44" y="29" class="txt-muted" font-size="11">Viajero Turista</text>
+    </g>
+  </g>
+
+  <!-- MAIN CONTAINER (Centered 1200px) -->
+  <g id="Main_Content" transform="translate(120, 95)">
+    
+    <!-- Header Row -->
+    <g transform="translate(0, 20)">
+      <text x="0" y="0" class="txt-title">Mis Atractivos Guardados</text>
+      <text x="0" y="24" class="txt-muted">Colección de destinos guardados para tu próximo itinerario de viaje en Chile</text>
+
+      <!-- Action Buttons Right -->
+      <g transform="translate(940, -10)">
+        <rect width="130" height="36" class="btn-outline" />
+        <text x="65" y="22" font-family="Inter, sans-serif" font-weight="500" font-size="12" fill="#334155" text-anchor="middle">Compartir lista</text>
+        <rect x="140" y="0" width="120" height="36" class="btn-primary" />
+        <text x="200" y="22" class="btn-primary-txt">Ver en mapa 📍</text>
+      </g>
+    </g>
+
+    <!-- GRID OF SAVED CARDS (3 COLUMNS: 380px cada una) -->
+    <g id="Favorites_Grid" transform="translate(0, 80)">
+      
+      <!-- CARD 1: Torres del Paine -->
+      <g transform="translate(0, 0)">
+        <rect width="380" height="380" class="card" />
+        <!-- Thumbnail mock -->
+        <rect x="12" y="12" width="356" height="190" rx="6" fill="#E2E8F0" />
+        <path d="M 60 160 L 140 80 L 220 150 L 280 110 L 350 170" stroke="#94A3B8" stroke-width="2" fill="none" />
+        <circle cx="140" cy="80" r="5" fill="#94A3B8" />
+        <!-- Remove favorite button -->
+        <circle cx="340" cy="36" r="16" fill="#FFFFFF" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.1))" />
+        <path d="M340 40 L335 35 A 3 3 0 0 1 340 31 A 3 3 0 0 1 345 35 Z" fill="#EF4444" />
+        
+        <!-- Info -->
+        <rect x="16" y="216" width="95" height="20" class="badge" />
+        <text x="24" y="230" class="badge-txt">PARQUE NACIONAL</text>
+        <text x="16" y="258" class="txt-main" font-size="16">Torres del Paine</text>
+        <text x="16" y="278" class="txt-muted">Magallanes y Antártica Chilena</text>
+        <text x="16" y="298" class="txt-muted">★ 4.9 (1,420 reseñas) • Senderismo</text>
+
+        <line x1="16" y1="320" x2="364" y2="320" stroke="#F1F5F9" stroke-width="1" />
+        <text x="16" y="348" font-family="Inter, sans-serif" font-weight="600" font-size="13" fill="#0F172A">Ver detalles e itinerario →</text>
+      </g>
+
+      <!-- CARD 2: Valle de la Luna -->
+      <g transform="translate(410, 0)">
+        <rect width="380" height="380" class="card" />
+        <rect x="12" y="12" width="356" height="190" rx="6" fill="#E2E8F0" />
+        <path d="M 60 160 L 140 80 L 220 150 L 280 110 L 350 170" stroke="#94A3B8" stroke-width="2" fill="none" />
+        <circle cx="340" cy="36" r="16" fill="#FFFFFF" />
+        <path d="M340 40 L335 35 A 3 3 0 0 1 340 31 A 3 3 0 0 1 345 35 Z" fill="#EF4444" />
+        
+        <rect x="16" y="216" width="65" height="20" class="badge" />
+        <text x="24" y="230" class="badge-txt">DESIERTO</text>
+        <text x="16" y="258" class="txt-main" font-size="16">Valle de la Luna</text>
+        <text x="16" y="278" class="txt-muted">San Pedro de Atacama, Antofagasta</text>
+        <text x="16" y="298" class="txt-muted">★ 4.8 (980 reseñas) • Fotografía</text>
+
+        <line x1="16" y1="320" x2="364" y2="320" stroke="#F1F5F9" stroke-width="1" />
+        <text x="16" y="348" font-family="Inter, sans-serif" font-weight="600" font-size="13" fill="#0F172A">Ver detalles e itinerario →</text>
+      </g>
+
+      <!-- CARD 3: Cerros de Valparaiso -->
+      <g transform="translate(820, 0)">
+        <rect width="380" height="380" class="card" />
+        <rect x="12" y="12" width="356" height="190" rx="6" fill="#E2E8F0" />
+        <path d="M 60 160 L 140 80 L 220 150 L 280 110 L 350 170" stroke="#94A3B8" stroke-width="2" fill="none" />
+        <circle cx="340" cy="36" r="16" fill="#FFFFFF" />
+        <path d="M340 40 L335 35 A 3 3 0 0 1 340 31 A 3 3 0 0 1 345 35 Z" fill="#EF4444" />
+        
+        <rect x="16" y="216" width="80" height="20" class="badge" />
+        <text x="24" y="230" class="badge-txt">PATRIMONIO</text>
+        <text x="16" y="258" class="txt-main" font-size="16">Cerros de Valparaíso</text>
+        <text x="16" y="278" class="txt-muted">Valparaíso, Región de Valparaíso</text>
+        <text x="16" y="298" class="txt-muted">★ 4.7 (2,150 reseñas) • Arte Urbano</text>
+
+        <line x1="16" y1="320" x2="364" y2="320" stroke="#F1F5F9" stroke-width="1" />
+        <text x="16" y="348" font-family="Inter, sans-serif" font-weight="600" font-size="13" fill="#0F172A">Ver detalles e itinerario →</text>
+      </g>
+    </g>
+
+    <!-- Empty state mock helper (para justificación técnica) -->
+    <g transform="translate(0, 500)">
+      <rect width="1200" height="120" rx="8" fill="#FFFFFF" stroke="#E2E8F0" stroke-dasharray="4 4" />
+      <text x="600" y="55" class="txt-main" font-size="15" text-anchor="middle">¿Deseas agregar más lugares a tu itinerario?</text>
+      <text x="600" y="78" class="txt-muted" text-anchor="middle">Explora el mapa interactivo y presiona el ícono de corazón para guardar nuevos atractivos</text>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,151 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 844" width="390" height="844">
+  <defs>
+    <style>
+      .bg { fill: #F8FAFC; }
+      .header-bg { fill: #FFFFFF; stroke: #E2E8F0; stroke-width: 1; }
+      .card-auth { fill: #FFFFFF; stroke: #E2E8F0; stroke-width: 1; rx: 12px; }
+      .input-box { fill: #FFFFFF; stroke: #CBD5E1; stroke-width: 1; rx: 6px; }
+      .txt-brand { font-family: Inter, Helvetica, Arial, sans-serif; font-weight: 700; font-size: 16px; fill: #0F172A; }
+      .txt-title { font-family: Inter, Helvetica, Arial, sans-serif; font-weight: 700; font-size: 18px; fill: #0F172A; }
+      .txt-label { font-family: Inter, Helvetica, Arial, sans-serif; font-weight: 600; font-size: 12px; fill: #334155; }
+      .txt-muted { font-family: Inter, Helvetica, Arial, sans-serif; font-weight: 400; font-size: 10px; fill: #64748B; }
+      .txt-placeholder { font-family: Inter, Helvetica, Arial, sans-serif; font-weight: 400; font-size: 12px; fill: #94A3B8; }
+      .btn-primary { fill: #0F172A; rx: 6px; }
+      .btn-primary-txt { font-family: Inter, Helvetica, Arial, sans-serif; font-weight: 600; font-size: 13px; fill: #FFFFFF; text-anchor: middle; }
+      .checkbox-checked { fill: #0F172A; rx: 4px; }
+    </style>
+  </defs>
+
+  <!-- Mobile Frame Background -->
+  <rect width="390" height="844" class="bg" />
+
+  <!-- STATUS BAR (iOS Mock) -->
+  <g id="Status_Bar">
+    <text x="32" y="30" font-family="Inter, sans-serif" font-weight="600" font-size="14" fill="#0F172A">9:41</text>
+    <rect x="135" y="10" width="120" height="28" rx="14" fill="#000000" />
+    <circle cx="330" cy="26" r="3" fill="#0F172A" />
+    <circle cx="340" cy="26" r="4" fill="#0F172A" />
+    <rect x="350" y="20" width="20" height="11" rx="3" stroke="#0F172A" stroke-width="1.5" fill="none" />
+    <rect x="352" y="22" width="12" height="7" rx="1.5" fill="#0F172A" />
+  </g>
+
+  <!-- TOP MOBILE HEADER -->
+  <g id="Top_Header" transform="translate(0, 44)">
+    <rect width="390" height="56" class="header-bg" />
+    <!-- Back Button -->
+    <path d="M 24 28 L 32 20 L 32 36 Z" fill="#64748B" />
+    
+    <!-- Centered Brand -->
+    <g transform="translate(130, 0)">
+      <circle cx="10" cy="28" r="12" fill="#0F172A" />
+      <path d="M 5 31 L 10 22 L 15 31 Z" fill="#FFFFFF" />
+      <text x="30" y="33" class="txt-brand">Sendaria <tspan fill="#64748B" font-weight="400">Chile</tspan></text>
+    </g>
+  </g>
+
+  <!-- MAIN REGISTRATION CARD CONTAINER -->
+  <g id="Register_Card" transform="translate(16, 116)">
+    <!-- Ajuste de altura dinámica (580px) para acomodar los elementos apilados -->
+    <rect width="358" height="600" class="card-auth" />
+
+    <!-- Card Header -->
+    <g transform="translate(20, 24)">
+      <text x="0" y="0" class="txt-title">Crear Cuenta</text>
+      <!-- Wrap manual para texto secundario -->
+      <text x="0" y="20" class="txt-muted">Registra tu usuario para guardar atractivos</text>
+      <text x="0" y="34" class="txt-muted">favoritos y armar tus rutas</text>
+    </g>
+
+    <!-- FORM FIELDS (Ancho ajustado a 318px) -->
+    <g transform="translate(20, 85)">
+      
+      <!-- Field 1: Nombre Completo -->
+      <g transform="translate(0, 0)">
+        <text x="0" y="0" class="txt-label">Nombre completo <tspan fill="#EF4444">*</tspan></text>
+        <rect x="0" y="8" width="318" height="40" class="input-box" />
+        <text x="12" y="32" class="txt-placeholder">Ej. Francisca Valenzuela</text>
+        <text x="0" y="62" class="txt-muted">Obligatorio para tu perfil de viajero</text>
+      </g>
+
+      <!-- Field 2: Correo Electrónico -->
+      <g transform="translate(0, 80)">
+        <text x="0" y="0" class="txt-label">Correo electrónico <tspan fill="#EF4444">*</tspan></text>
+        <rect x="0" y="8" width="318" height="40" class="input-box" />
+        <text x="12" y="32" class="txt-placeholder">correo@ejemplo.com</text>
+        <text x="0" y="62" class="txt-muted">Recibirás tu confirmación de itinerarios aquí</text>
+      </g>
+
+      <!-- Field 3: Contraseña con validación visual -->
+      <g transform="translate(0, 160)">
+        <text x="0" y="0" class="txt-label">Contraseña <tspan fill="#EF4444">*</tspan></text>
+        <rect x="0" y="8" width="318" height="40" class="input-box" />
+        <!-- Mock Password Dots -->
+        <circle cx="16" cy="28" r="3" fill="#64748B" />
+        <circle cx="24" cy="28" r="3" fill="#64748B" />
+        <circle cx="32" cy="28" r="3" fill="#64748B" />
+        <circle cx="40" cy="28" r="3" fill="#64748B" />
+        <circle cx="48" cy="28" r="3" fill="#64748B" />
+
+        <!-- Password Strength Meter -->
+        <g transform="translate(0, 58)">
+          <text x="0" y="0" class="txt-muted">Seguridad: Media</text>
+          <!-- 4 bars scaled to mobile (35px cada una, gap de 5px) -->
+          <rect x="100" y="-8" width="35" height="4" rx="2" fill="#16A34A" />
+          <rect x="140" y="-8" width="35" height="4" rx="2" fill="#16A34A" />
+          <rect x="180" y="-8" width="35" height="4" rx="2" fill="#E2E8F0" />
+          <rect x="220" y="-8" width="35" height="4" rx="2" fill="#E2E8F0" />
+        </g>
+        <text x="0" y="74" class="txt-muted">Mínimo 8 caracteres, 1 mayúscula y 1 número</text>
+      </g>
+
+      <!-- Field 4: Confirmar Contraseña -->
+      <g transform="translate(0, 255)">
+        <text x="0" y="0" class="txt-label">Confirmar contraseña <tspan fill="#EF4444">*</tspan></text>
+        <rect x="0" y="8" width="318" height="40" class="input-box" />
+        <circle cx="16" cy="28" r="3" fill="#64748B" />
+        <circle cx="24" cy="28" r="3" fill="#64748B" />
+        <circle cx="32" cy="28" r="3" fill="#64748B" />
+        <circle cx="40" cy="28" r="3" fill="#64748B" />
+        <circle cx="48" cy="28" r="3" fill="#64748B" />
+        <!-- Check icon validator moved to X=294 -->
+        <circle cx="294" cy="28" r="8" fill="#DCFCE7" />
+        <path d="M290 28 L293 31 L298 26" stroke="#16A34A" stroke-width="1.5" fill="none" />
+      </g>
+
+      <!-- Field 5: Preferencia de Viaje -->
+      <g transform="translate(0, 315)">
+        <text x="0" y="0" class="txt-label">Tipo de turismo preferido <tspan fill="#64748B" font-weight="400">(Opcional)</tspan></text>
+        <rect x="0" y="8" width="318" height="40" class="input-box" />
+        <text x="12" y="32" class="txt-muted" font-size="11">Ej. Parques Nacionales</text>
+        <polygon points="292,25 300,25 296,30" fill="#64748B" />
+      </g>
+
+      <!-- Checkbox: Términos y Condiciones -->
+      <g transform="translate(0, 385)">
+        <rect x="0" y="0" width="18" height="18" class="checkbox-checked" />
+        <path d="M4 9 L7 12 L14 5" stroke="#FFFFFF" stroke-width="2" fill="none" />
+        <!-- Wrap de texto requerido para dispositivos móviles -->
+        <text x="28" y="10" font-family="Inter, sans-serif" font-size="11" fill="#334155">
+          He leído y acepto los <tspan fill="#2563EB" font-weight="600">Términos del Servicio</tspan>
+        </text>
+        <text x="28" y="24" font-family="Inter, sans-serif" font-size="11" fill="#334155">
+          y la <tspan fill="#2563EB" font-weight="600">Política de Privacidad</tspan> <tspan fill="#EF4444">*</tspan>
+        </text>
+      </g>
+
+      <!-- Submit Button -->
+      <g transform="translate(0, 440)">
+        <rect width="318" height="46" class="btn-primary" />
+        <text x="159" y="27" class="btn-primary-txt">Crear mi cuenta de viajero</text>
+      </g>
+
+      <!-- Feedback / Login link -->
+      <g transform="translate(0, 520)">
+        <line x1="0" y1="0" x2="318" y2="0" stroke="#F1F5F9" stroke-width="1" />
+        <text x="159" y="28" font-family="Inter, sans-serif" font-size="12" fill="#64748B" text-anchor="middle">
+          ¿Ya tienes cuenta? <tspan fill="#0F172A" font-weight="700">Inicia sesión</tspan>
+        </text>
+      </g>
+    </g>
+  </g>
+</svg>

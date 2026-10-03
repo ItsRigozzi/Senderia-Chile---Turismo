@@ -1,0 +1,130 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" width="1440" height="900">
+  <defs>
+    <style>
+      .bg { fill: #F8FAFC; }
+      .nav-bg { fill: #FFFFFF; stroke: #E2E8F0; stroke-width: 1; }
+      .card { fill: #FFFFFF; stroke: #E2E8F0; stroke-width: 1; rx: 8px; }
+      .txt-brand { font-family: Inter, Helvetica, Arial, sans-serif; font-weight: 700; font-size: 20px; fill: #0F172A; }
+      .txt-title { font-family: Inter, Helvetica, Arial, sans-serif; font-weight: 700; font-size: 28px; fill: #0F172A; }
+      .txt-h2 { font-family: Inter, Helvetica, Arial, sans-serif; font-weight: 600; font-size: 16px; fill: #0F172A; }
+      .txt-body { font-family: Inter, Helvetica, Arial, sans-serif; font-weight: 400; font-size: 14px; fill: #334155; }
+      .txt-muted { font-family: Inter, Helvetica, Arial, sans-serif; font-weight: 400; font-size: 13px; fill: #64748B; }
+      .txt-info-label { font-family: Inter, Helvetica, Arial, sans-serif; font-weight: 600; font-size: 12px; fill: #64748B; }
+      .txt-info-val { font-family: Inter, Helvetica, Arial, sans-serif; font-weight: 600; font-size: 14px; fill: #0F172A; }
+      .badge { fill: #0F172A; rx: 4px; }
+      .badge-txt { font-family: Inter, Helvetica, Arial, sans-serif; font-weight: 600; font-size: 11px; fill: #FFFFFF; }
+      .btn-primary { fill: #0F172A; rx: 6px; }
+      .btn-primary-txt { font-family: Inter, Helvetica, Arial, sans-serif; font-weight: 600; font-size: 14px; fill: #FFFFFF; text-anchor: middle; }
+      .btn-outline { fill: #FFFFFF; stroke: #CBD5E1; stroke-width: 1; rx: 6px; }
+      .btn-outline-txt { font-family: Inter, Helvetica, Arial, sans-serif; font-weight: 500; font-size: 13px; fill: #334155; text-anchor: middle; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1440" height="900" class="bg" />
+
+  <!-- NAVBAR -->
+  <g id="Navbar">
+    <rect width="1440" height="70" class="nav-bg" />
+    <circle cx="50" cy="35" r="14" fill="#0F172A" />
+    <path d="M44 38 L50 28 L56 38 Z" fill="#FFFFFF" />
+    <text x="74" y="42" class="txt-brand">Sendaria <tspan fill="#64748B" font-weight="400">Chile</tspan></text>
+    
+    <text x="320" y="41" font-family="Inter, sans-serif" font-size="13" fill="#64748B">← Volver a Explorar Destinos</text>
+
+    <g transform="translate(1260, 17)">
+      <rect width="130" height="36" class="btn-outline" />
+      <text x="65" y="23" class="btn-outline-txt">❤ Guardar Favorito</text>
+    </g>
+  </g>
+
+  <!-- MAIN CONTAINER (Centered 1200px grid) -->
+  <g id="Content" transform="translate(120, 95)">
+    
+    <!-- Breadcrumb -->
+    <text x="0" y="15" class="txt-muted" font-size="12">Inicio &gt; Magallanes y Antártica Chilena &gt; Parques Nacionales &gt; <tspan fill="#0F172A" font-weight="600">Torres del Paine</tspan></text>
+
+    <!-- Header Section -->
+    <g transform="translate(0, 30)">
+      <rect x="0" y="0" width="125" height="24" class="badge" />
+      <text x="10" y="16" class="badge-txt">PARQUE NACIONAL</text>
+      <text x="0" y="58" class="txt-title">Parque Nacional Torres del Paine</text>
+      <text x="0" y="84" class="txt-muted">Provincia de Última Esperanza, Región de Magallanes y de la Antártica Chilena</text>
+      <text x="0" y="104" font-family="Inter, sans-serif" font-size="13" fill="#F59E0B">★★★★★ <tspan fill="#0F172A" font-weight="600">4.9</tspan> <tspan fill="#64748B">(1,420 opiniones verificadas)</tspan></text>
+    </g>
+
+    <!-- Two-Column Grid: Left (Media & Details) 740px + Right (Map Card & Practical Info) 420px -->
+    <g transform="translate(0, 155)">
+      
+      <!-- LEFT COLUMN -->
+      <g id="Left_Column">
+        <!-- Hero Image Mock -->
+        <rect width="720" height="320" rx="8" fill="#E2E8F0" stroke="#CBD5E1" stroke-width="1" />
+        <path d="M 120 260 L 260 140 L 410 240 L 520 160 L 680 270" stroke="#94A3B8" stroke-width="3" fill="none" />
+        <circle cx="260" cy="140" r="6" fill="#94A3B8" />
+        <text x="360" y="295" class="txt-muted" font-size="12" text-anchor="middle">[ Galería de Imágenes: Mirador Base Torres • 12 Fotografías disponibles ]</text>
+
+        <!-- Description Card -->
+        <g transform="translate(0, 340)">
+          <rect width="720" height="230" class="card" />
+          <text x="24" y="36" class="txt-h2">Acerca de este destino</text>
+          <text x="24" y="68" class="txt-body">Considerado la octava maravilla del mundo, el Parque Nacional Torres del Paine es una de las áreas</text>
+          <text x="24" y="90" class="txt-body">silvestres protegidas más importantes de Chile. Destaca por sus imponentes cuernos y torres de granito,</text>
+          <text x="24" y="112" class="txt-body">sus glaciares milenarios y una fauna autóctona que incluye guanacos, cóndores y huemules.</text>
+          
+          <text x="24" y="148" class="txt-body">Ofrece circuitos de trekking de clase mundial como el Circuito W y el Circuito O, además de miradores</text>
+          <text x="24" y="170" class="txt-body">accesibles para todo tipo de viajeros y familias durante temporada estival.</text>
+
+          <line x1="24" y1="195" x2="696" y2="195" stroke="#F1F5F9" stroke-width="1" />
+          <text x="24" y="215" font-family="Inter, sans-serif" font-weight="600" font-size="12" fill="#2563EB">Descargar guía oficial de senderos CONAF (PDF) ↗</text>
+        </g>
+      </g>
+
+      <!-- RIGHT COLUMN: Practical Info & Embedded Google Maps -->
+      <g id="Right_Column" transform="translate(750, 0)">
+        
+        <!-- Interactive Map Preview Box -->
+        <rect width="450" height="240" rx="8" fill="#E2E8F0" stroke="#CBD5E1" stroke-width="1" />
+        <!-- Topo lines -->
+        <path d="M 0 100 Q 150 60 450 140" stroke="#CBD5E1" stroke-width="2" fill="none" stroke-dasharray="4 4" />
+        <path d="M 0 180 Q 200 130 450 200" stroke="#CBD5E1" stroke-width="2" fill="none" stroke-dasharray="4 4" />
+        
+        <!-- Center Destination Marker -->
+        <g transform="translate(225, 110)">
+          <ellipse cx="0" cy="18" rx="8" ry="4" fill="#000000" opacity="0.2" />
+          <path d="M 0 -18 C -10 -18 -16 -10 -16 0 C -16 12 0 24 0 24 C 0 24 16 12 16 0 C 16 -10 10 -18 0 -18 Z" fill="#0F172A" />
+          <circle cx="0" cy="-3" r="5" fill="#FFFFFF" />
+        </g>
+        
+        <g transform="translate(20, 190)">
+          <rect width="410" height="36" class="btn-primary" />
+          <text x="205" y="23" class="btn-primary-txt">Abrir ruta en Google Maps ↗</text>
+        </g>
+
+        <!-- Practical Information Card -->
+        <g transform="translate(0, 260)">
+          <rect width="450" height="310" class="card" />
+          <text x="24" y="32" class="txt-h2">Datos Prácticos de Visita</text>
+
+          <!-- Horarios -->
+          <text x="24" y="68" class="txt-info-label">HORARIO DE ACCESO</text>
+          <text x="24" y="88" class="txt-info-val">Lunes a Domingo: 07:00 – 20:30 hrs</text>
+
+          <!-- Tarifas -->
+          <text x="24" y="124" class="txt-info-label">TARIFA DE ENTRADA ESTIMADA</text>
+          <text x="24" y="144" class="txt-info-val">Nacional: $8.000 CLP | Extranjero: $35 USD</text>
+
+          <!-- Temporada Recomendada -->
+          <text x="24" y="180" class="txt-info-label">TEMPORADA ÓPTIMA</text>
+          <text x="24" y="200" class="txt-info-val">Octubre a Abril (Clima favorable y más luz)</text>
+
+          <!-- Condiciones de Acceso -->
+          <text x="24" y="236" class="txt-info-label">CONDICIONES DE ACCESO</text>
+          <text x="24" y="256" class="txt-body" font-size="12">Reserva previa obligatoria en pasesparques.cl. Se requiere calzado de montaña y registro en guardería.</text>
+
+          <rect x="24" y="270" width="402" height="1" fill="#F1F5F9" />
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>
