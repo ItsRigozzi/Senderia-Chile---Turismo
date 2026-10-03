@@ -91,14 +91,12 @@ Validación de entradas con Zod, SQL parametrizado, claves con bcrypt y autoriza
 
 ## Rama y acceso de evaluación
 
-La carpeta de trabajo actual usa la rama `main`; la rúbrica solicita que el backend se entregue en una rama identificable y que el repositorio sea accesible al equipo docente. Antes de entregar, sube la rama de backend (por ejemplo `backend/ep2`) con los cambios de esta entrega y anota la URL del repositorio en la planilla del Aula Virtual. Desde la raíz:
+La entrega EP2 está publicada en la rama `backend/ep2` del repositorio [Senderia-Chile---Turismo](https://github.com/ItsRigozzi/Senderia-Chile---Turismo/tree/backend/ep2). Para obtenerla en otro equipo:
 
 ```powershell
-git switch -c backend/ep2
-git add .
-git commit -m "Completa backend integrado para EP2"
-git push -u origin backend/ep2
-git branch --all
+git fetch origin
+git switch backend/ep2
+git pull
 ```
 
-Confirma en GitHub que la rama aparece, que `backend/` y `frontend/` están versionados y que el profesor/ayudante puede abrir el repositorio. La URL debe ingresarse también en la planilla de entrega.
+Ingresa la URL del repositorio en la planilla del Aula Virtual y comprueba que el profesor/ayudante tenga acceso. Si el repositorio es privado, agrega a las personas evaluadoras con los permisos que solicite el curso.
