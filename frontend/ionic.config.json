@@ -1,7 +1,0 @@
-{
-  "name": "senderia",
-  "integrations": {
-    "capacitor": {}
-  },
-  "type": "react-vite"
-}
