@@ -56,4 +56,5 @@ CREATE TABLE IF NOT EXISTS favoritos (
 -- Índices para mejorar consultas frecuentes
 CREATE INDEX IF NOT EXISTS idx_destinos_categoria ON destinos(categoria_id);
 CREATE INDEX IF NOT EXISTS idx_destinos_region ON destinos(region_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_destinos_nombre_region ON destinos(nombre, region_id);
 CREATE INDEX IF NOT EXISTS idx_favoritos_usuario ON favoritos(usuario_id);

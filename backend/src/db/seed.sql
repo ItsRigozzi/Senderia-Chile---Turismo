@@ -20,7 +20,10 @@ INSERT INTO regiones (nombre, slug) VALUES
   ('Los Lagos', 'los-lagos'),
   ('Aysén', 'aysen'),
   ('Magallanes', 'magallanes')
-ON CONFLICT (nombre) DO NOTHING;
+-- Puede existir ya el nombre o el slug si una ejecución anterior cargó
+-- parcialmente el seed. Ignorar cualquier conflicto único hace repetible
+-- la inicialización.
+ON CONFLICT DO NOTHING;
 
 -- Categorías
 INSERT INTO categorias (nombre, slug, descripcion) VALUES
@@ -32,7 +35,7 @@ INSERT INTO categorias (nombre, slug, descripcion) VALUES
   ('Termas', 'termas', 'Aguas termales y centros de relajación.'),
   ('Museo', 'museo', 'Museos y espacios culturales.'),
   ('Lago', 'lago', 'Lagos y lagunas con actividades recreativas.')
-ON CONFLICT (nombre) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- Destinos de ejemplo
 INSERT INTO destinos (nombre, descripcion, categoria_id, region_id, latitud, longitud, horario, condiciones_acceso, imagen_url) VALUES
@@ -44,7 +47,7 @@ INSERT INTO destinos (nombre, descripcion, categoria_id, region_id, latitud, lon
     -51.253194, -72.881389,
     '8:30 - 20:00 (verano) / 8:30 - 18:00 (invierno)',
     'Se requiere reserva previa en temporada alta. Entrada pagada.',
-    'https://images.unsplash.com/photo-1531794893694-11d7689029a7?w=800'
+    '/images/destinos/torres-del-paine.jpg'
   ),
   (
     'Valle de la Luna',
@@ -54,7 +57,7 @@ INSERT INTO destinos (nombre, descripcion, categoria_id, region_id, latitud, lon
     -22.923904, -68.282418,
     '8:00 - 19:00',
     'Llevar agua y protección solar. Caminos de tierra.',
-    'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800'
+    '/images/destinos/valle-de-la-luna.jpg'
   ),
   (
     'Cerros de Valparaíso',
@@ -64,7 +67,7 @@ INSERT INTO destinos (nombre, descripcion, categoria_id, region_id, latitud, lon
     -33.039765, -71.631610,
     'Acceso libre',
     'Usar calzado cómodo. Precaución en calles empinadas.',
-    'https://images.unsplash.com/photo-1594498653385-d5172c532c00?w=800'
+    '/images/destinos/cerros-valparaiso.jpg'
   ),
   (
     'Termas Geométricas',
@@ -74,8 +77,10 @@ INSERT INTO destinos (nombre, descripcion, categoria_id, region_id, latitud, lon
     -39.501939, -71.874940,
     '10:00 - 20:00',
     'Reserva anticipada recomendada. Estacionamiento disponible.',
-    'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800'
-  );
+    '/images/destinos/termas-geometricas.jpg'
+  ) ON CONFLICT (nombre, region_id) DO UPDATE
+    SET imagen_url = EXCLUDED.imagen_url,
+        updated_at = CURRENT_TIMESTAMP;
 
 -- Por seguridad, el seed no crea administradores con contraseñas conocidas.
 -- Cree el primer administrador mediante el comando documentado en README.md.
