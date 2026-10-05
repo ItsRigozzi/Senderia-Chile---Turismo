@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { IonButton, IonContent, IonHeader, IonPage, IonSpinner, IonTitle, IonToolbar } from '@ionic/react';
+import { IonButton, IonContent, IonHeader, IonPage, IonSpinner, IonToolbar } from '@ionic/react';
 import { useNavigate } from 'react-router-dom';
 import { favoritosService } from '../services/api';
 
@@ -43,13 +43,27 @@ const Favoritos: React.FC = () => {
 
   return (
     <IonPage>
-      <IonHeader><IonToolbar className="senderia-navbar"><IonTitle>Mis destinos favoritos</IonTitle><IonButton slot="end" fill="clear" onClick={() => navigate('/explorar')}>Explorar</IonButton></IonToolbar></IonHeader>
+      <IonHeader>
+        <IonToolbar className="senderia-navbar">
+          <div className="favorites-navbar-inner">
+            <div className="favorites-brand">
+              <span className="brand-badge" aria-hidden="true">▲</span>
+              <strong>Senderia <span>Chile</span></strong>
+            </div>
+            <button className="favorites-back-button" type="button" onClick={() => navigate('/explorar')}>
+              <span aria-hidden="true">←</span> Volver a Explorar Destinos
+            </button>
+          </div>
+        </IonToolbar>
+      </IonHeader>
       <IonContent>
         <main className="favorites-page">
-          <h1>Mis favoritos</h1>
-          <p>Tu lista se guarda en tu cuenta.</p>
+          <header className="favorites-page-heading">
+            <h1>Mis atractivos guardados</h1>
+            <p>Tu colección de destinos para planificar tu próximo viaje por Chile.</p>
+          </header>
           {error && <p role="alert" className="favorites-error">{error}</p>}
-          {loading ? <div className="favorites-loading"><IonSpinner /><span>Cargando favoritos…</span></div> : favoritos.length === 0 ? <section className="favorites-empty"><span aria-hidden="true">♡</span><h2>Aún no guardas destinos</h2><p>Explora Chile y agrega a favoritos los lugares que quieras visitar.</p><IonButton onClick={() => navigate('/explorar')}>Explorar destinos</IonButton></section> : <section className="favorites-grid">{favoritos.map((item) => <article className="favorite-card" key={item.favorito_id}><button className="favorite-image-button" onClick={() => navigate(`/destinos/${item.id}`)} aria-label={`Ver ${item.nombre}`}><img src={item.imagen_url || 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=900&q=80'} alt={item.nombre} loading="lazy" /></button><div className="favorite-card-body"><span>{item.region_nombre} · {item.categoria_nombre}</span><h2>{item.nombre}</h2><p>{item.descripcion}</p><div><IonButton fill="clear" onClick={() => navigate(`/destinos/${item.id}`)}>Ver destino</IonButton><IonButton color="medium" fill="clear" onClick={() => void remove(item.favorito_id)}>Quitar</IonButton></div></div></article>)}</section>}
+          {loading ? <div className="favorites-loading"><IonSpinner /><span>Cargando favoritos…</span></div> : favoritos.length === 0 ? <section className="favorites-empty"><span aria-hidden="true">♡</span><h2>Aún no guardas destinos</h2><p>Explora Chile y agrega a favoritos los lugares que quieras visitar.</p><IonButton onClick={() => navigate('/explorar')}>Explorar destinos</IonButton></section> : <section className="favorites-grid">{favoritos.map((item) => <article className="favorite-card" key={item.favorito_id}><button className="favorite-image-button" onClick={() => navigate(`/destinos/${item.id}`)} aria-label={`Ver ${item.nombre}`}><img src={item.imagen_url || '/images/destinos/sin-imagen.svg'} alt={item.nombre} loading="lazy" onError={(e) => { if (!e.currentTarget.src.endsWith('/sin-imagen.svg')) e.currentTarget.src = '/images/destinos/sin-imagen.svg'; }} /></button><div className="favorite-card-body"><span>{item.region_nombre} · {item.categoria_nombre}</span><h2>{item.nombre}</h2><p>{item.descripcion}</p><div><IonButton fill="clear" onClick={() => navigate(`/destinos/${item.id}`)}>Ver destino</IonButton><IonButton color="medium" fill="clear" onClick={() => void remove(item.favorito_id)}>Quitar</IonButton></div></div></article>)}</section>}
         </main>
       </IonContent>
     </IonPage>

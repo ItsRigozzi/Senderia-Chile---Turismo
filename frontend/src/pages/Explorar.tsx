@@ -79,22 +79,26 @@ const Explorar: React.FC = () => {
                 </span>
               </div>
 
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '3px 8px',
-                  borderRadius: '12px',
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  background: error ? '#FEE2E2' : '#DCFCE7',
-                  color: error ? '#B91C1C' : '#15803D'
-                }}
-              >
+              {isAdmin && (
+                <span
+                  role="status"
+                  aria-live="polite"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '3px 8px',
+                    borderRadius: '12px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    background: error ? '#FEE2E2' : '#DCFCE7',
+                    color: error ? '#B91C1C' : '#15803D'
+                  }}
+                >
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: error ? '#DC2626' : '#16A34A' }} />
-                {error ? 'API no disponible' : 'API conectada'}
-              </span>
+                  {error ? 'API no disponible' : 'API conectada'}
+                </span>
+              )}
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -106,12 +110,12 @@ const Explorar: React.FC = () => {
                   {isAdmin && (
                     <button
                       onClick={() => window.location.href = '/admin/dashboard'}
-                      style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #CBD5E1', background: '#fff', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+                      style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #CBD5E1', background: '#fff', color: '#0F172A', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
                     >
                       Admin
                     </button>
                   )}
-                  {!isAdmin && <button onClick={() => window.location.href = '/favoritos'} style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #CBD5E1', background: '#fff', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>♡ Favoritos</button>}
+                  {!isAdmin && <button onClick={() => window.location.href = '/favoritos'} style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #CBD5E1', background: '#fff', color: '#0F172A', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>♡ Favoritos</button>}
                   <button
                     onClick={logout}
                     style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#64748B', fontSize: '12px', cursor: 'pointer' }}
@@ -175,7 +179,7 @@ const Explorar: React.FC = () => {
 
           {error && (
             <div style={{ background: '#FEE2E2', border: '1px solid #FCA5A5', color: '#B91C1C', padding: '12px 16px', borderRadius: 8, margin: '16px 0' }}>
-              {error}
+              {isAdmin ? error : 'No se pudieron cargar los destinos. Intenta nuevamente en unos minutos.'}
             </div>
           )}
 
@@ -195,11 +199,13 @@ const Explorar: React.FC = () => {
                 >
                   <div className="destino-img-wrap">
                     <img
-                      src={destino.imagen_url || 'https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=800&q=80'}
+                      src={destino.imagen_url || '/images/destinos/sin-imagen.svg'}
                       alt={destino.nombre}
                       loading="lazy"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80';
+                        if (!e.currentTarget.src.endsWith('/sin-imagen.svg')) {
+                          e.currentTarget.src = '/images/destinos/sin-imagen.svg';
+                        }
                       }}
                     />
                     <span className="destino-badge-top">{destino.categoria_nombre}</span>

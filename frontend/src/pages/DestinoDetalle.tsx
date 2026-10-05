@@ -125,11 +125,13 @@ const DestinoDetalle: React.FC = () => {
             {/* Columna Izquierda: Imagen y Descripción */}
             <div>
               <img
-                src={destino.imagen_url || 'https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1200&q=80'}
+                src={destino.imagen_url || '/images/destinos/sin-imagen.svg'}
                 alt={destino.nombre}
                 className="detail-main-img"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80';
+                  if (!e.currentTarget.src.endsWith('/sin-imagen.svg')) {
+                    e.currentTarget.src = '/images/destinos/sin-imagen.svg';
+                  }
                 }}
               />
 

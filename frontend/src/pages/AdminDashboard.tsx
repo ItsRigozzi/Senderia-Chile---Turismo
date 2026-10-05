@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { IonContent, IonHeader, IonPage, IonSpinner, IonTitle, IonToolbar } from '@ionic/react';
+import { IonContent, IonHeader, IonPage, IonSpinner, IonToolbar } from '@ionic/react';
 import { useNavigate } from 'react-router-dom';
 import { categoriasService, destinosService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -100,11 +100,22 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <IonPage>
-      <IonHeader><IonToolbar><IonTitle>Administración de Senderia</IonTitle></IonToolbar></IonHeader>
+      <IonHeader>
+        <IonToolbar>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 24px' }}>
+            <span className="brand-badge" aria-hidden="true">▲</span>
+            <div>
+              <strong style={{ display: 'block', color: '#0F172A', fontSize: 18, lineHeight: 1.2 }}>
+                Senderia <span style={{ color: '#64748B', fontWeight: 400 }}>Chile</span>
+              </strong>
+              <span style={{ display: 'block', color: '#64748B', fontSize: 12 }}>Panel de admin</span>
+            </div>
+          </div>
+        </IonToolbar>
+      </IonHeader>
       <IonContent>
         <div className="admin-layout">
           <aside className="admin-sidebar">
-            <div className="admin-sidebar-brand"><span className="brand-badge">▲</span><div><strong>Senderia</strong><span style={{ display: 'block', fontSize: 11 }}>PANEL ADMIN</span></div></div>
             <button className="admin-nav-item" onClick={() => navigate('/explorar')}>Volver a la aplicación ↗</button>
             <button className="admin-nav-item" onClick={() => { logout(); navigate('/login'); }}>Cerrar sesión</button>
           </aside>
