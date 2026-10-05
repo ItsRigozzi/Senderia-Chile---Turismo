@@ -91,11 +91,15 @@ Validación de entradas con Zod, SQL parametrizado, claves con bcrypt y autoriza
 
 ## Rama y acceso de evaluación
 
-La entrega EP2 está publicada en la rama `backend/ep2` del repositorio [Senderia-Chile---Turismo](https://github.com/ItsRigozzi/Senderia-Chile---Turismo/tree/backend/ep2). Para obtenerla en otro equipo:
+El repositorio organiza la entrega en tres ramas: `frontend` para Ionic/React y la planificación, `backend` para la API y los archivos SQL, y `ep2-integrada` para ejecutar la entrega completa con ambas partes conectadas.
+
+Las fotografías locales de muestra y sus licencias están documentadas en [`frontend/public/images/destinos/CREDITOS.md`](frontend/public/images/destinos/CREDITOS.md).
+
+La entrega integrada EP2 está en la rama [`ep2-integrada`](https://github.com/ItsRigozzi/Senderia-Chile---Turismo/tree/ep2-integrada). Para obtenerla en otro equipo:
 
 ```powershell
 git fetch origin
-git switch backend/ep2
+git switch ep2-integrada
 git pull
 ```
 
