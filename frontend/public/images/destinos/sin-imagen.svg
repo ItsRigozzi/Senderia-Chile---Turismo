@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Imagen no disponible</title>
+  <desc id="desc">Ilustración neutra de montañas, cerros y sol.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#dbeafe"/>
+      <stop offset="1" stop-color="#f8fafc"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="720" fill="url(#sky)"/>
+  <circle cx="900" cy="190" r="72" fill="#fbbf24"/>
+  <path d="M0 560 290 270l205 222 170-174 260 260v142H0Z" fill="#94a3b8"/>
+  <path d="m290 270 86 94-90-30-80 91ZM665 318l110 118-107-41-85 44Z" fill="#f8fafc"/>
+  <path d="M0 600q210-110 420 0t420 0 360-8v128H0Z" fill="#64748b"/>
+  <text x="600" y="660" fill="#fff" font-family="Arial,sans-serif" font-size="32" text-anchor="middle">Imagen no disponible</text>
+</svg>
