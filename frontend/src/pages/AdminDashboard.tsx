@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { IonContent, IonHeader, IonPage, IonSpinner, IonToolbar } from '@ionic/react';
 import { useNavigate } from 'react-router-dom';
 import { categoriasService, destinosService } from '../services/api';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
+import { getApiErrorBody } from '../services/apiError';
 
 interface Categoria { id: number; nombre: string; }
 interface Region { id: number; nombre: string; }
@@ -40,8 +41,8 @@ const AdminDashboard: React.FC = () => {
       setDestinos(destinosResponse.data.destinos || []);
       setCategorias(categoriasResponse.data.categorias || []);
       setRegiones(regionesResponse.data.regiones || []);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'No se pudo cargar la información desde PostgreSQL.');
+    } catch (err: unknown) {
+      setError(getApiErrorBody(err)?.error || 'No se pudo cargar la información desde PostgreSQL.');
     } finally {
       setLoading(false);
     }
@@ -81,8 +82,8 @@ const AdminDashboard: React.FC = () => {
       setNotice(editingId ? 'Destino actualizado.' : 'Destino creado.');
       resetForm();
       await loadData();
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'No se pudo guardar el destino. Verifica los campos y la conexión.');
+    } catch (err: unknown) {
+      setError(getApiErrorBody(err)?.error || 'No se pudo guardar el destino. Verifica los campos y la conexión.');
     } finally { setSaving(false); }
   };
 
@@ -93,8 +94,8 @@ const AdminDashboard: React.FC = () => {
       await destinosService.delete(destino.id);
       setNotice('Destino eliminado.');
       await loadData();
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'No se pudo eliminar el destino.');
+    } catch (err: unknown) {
+      setError(getApiErrorBody(err)?.error || 'No se pudo eliminar el destino.');
     }
   };
 

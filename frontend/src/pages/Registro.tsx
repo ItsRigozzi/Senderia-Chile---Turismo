@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
-  IonInput, IonButton, IonItem, IonList, IonText, IonLoading
+  IonPage, IonHeader, IonToolbar, IonContent, IonLoading
 } from '@ionic/react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
+import { getApiErrorBody } from '../services/apiError';
 
 const Registro: React.FC = () => {
   const [nombre, setNombre] = useState('');
@@ -38,13 +38,14 @@ const Registro: React.FC = () => {
     try {
       await register(nombre, email, password);
       navigate('/explorar');
-    } catch (err: any) {
-      if (err.response?.data?.detalles) {
-        const detalles = err.response.data.detalles;
+    } catch (err: unknown) {
+      const response = getApiErrorBody(err);
+      if (response?.detalles) {
+        const detalles = response.detalles;
         const mensajes = Object.values(detalles).flat().join('. ');
         setError(mensajes || 'Datos inválidos');
       } else {
-        const msg = err.response?.data?.error || 'Error al registrarse';
+        const msg = response?.error || 'Error al registrarse';
         setError(msg);
       }
     } finally {
