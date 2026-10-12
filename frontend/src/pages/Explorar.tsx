@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
-  IonCard, IonCardHeader, IonCardTitle, IonCardSubtitle,
-  IonButton, IonSpinner, IonText, IonButtons
+  IonPage, IonHeader, IonToolbar, IonContent, IonSpinner
 } from '@ionic/react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { destinosService } from '../services/api';
+import { getApiErrorBody } from '../services/apiError';
 
 interface Destino {
   id: number;
@@ -30,8 +29,8 @@ const Explorar: React.FC = () => {
         } else {
           setDestinos([]);
         }
-      } catch (err: any) {
-        setError(err.response?.data?.error || 'No se pudo conectar con la API. Comprueba que PostgreSQL y el backend estén activos.');
+      } catch (err: unknown) {
+        setError(getApiErrorBody(err)?.error || 'No se pudo conectar con la API. Comprueba que PostgreSQL y el backend estén activos.');
       } finally {
         setLoading(false);
       }
@@ -115,7 +114,7 @@ const Explorar: React.FC = () => {
                       Admin
                     </button>
                   )}
-                  {!isAdmin && <button onClick={() => window.location.href = '/favoritos'} style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #CBD5E1', background: '#fff', color: '#0F172A', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>♡ Favoritos</button>}
+                  <button onClick={() => window.location.href = '/favoritos'} style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #CBD5E1', background: '#fff', color: '#0F172A', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>♡ Favoritos</button>
                   <button
                     onClick={logout}
                     style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#64748B', fontSize: '12px', cursor: 'pointer' }}

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { IonButton, IonContent, IonHeader, IonPage, IonSpinner, IonToolbar } from '@ionic/react';
 import { useNavigate } from 'react-router-dom';
 import { favoritosService } from '../services/api';
+import { getApiErrorBody } from '../services/apiError';
 
 interface Favorito {
   favorito_id: number;
@@ -25,8 +26,8 @@ const Favoritos: React.FC = () => {
       const response = await favoritosService.getAll();
       setFavoritos(response.data.favoritos || []);
       setError('');
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'No se pudieron cargar tus favoritos.');
+    } catch (err: unknown) {
+      setError(getApiErrorBody(err)?.error || 'No se pudieron cargar tus favoritos.');
     } finally { setLoading(false); }
   }, []);
 
@@ -36,8 +37,8 @@ const Favoritos: React.FC = () => {
     try {
       await favoritosService.remove(id);
       setFavoritos((items) => items.filter((item) => item.favorito_id !== id));
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'No se pudo quitar el favorito.');
+    } catch (err: unknown) {
+      setError(getApiErrorBody(err)?.error || 'No se pudo quitar el favorito.');
     }
   };
 

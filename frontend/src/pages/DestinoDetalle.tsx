@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
-  IonButtons, IonBackButton, IonItem, IonLabel, IonButton,
+  IonButtons, IonBackButton,
   IonSpinner, IonText
 } from '@ionic/react';
 import { useParams } from 'react-router';
 import { destinosService, favoritosService } from '../services/api';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
+import { getApiErrorBody } from '../services/apiError';
 
 interface DestinoFull {
   id: number;
@@ -39,8 +40,8 @@ const DestinoDetalle: React.FC = () => {
           setLoading(false);
           return;
         }
-      } catch (err: any) {
-        setError(err.response?.data?.error || 'No se pudo cargar el destino desde el backend.');
+      } catch (err: unknown) {
+        setError(getApiErrorBody(err)?.error || 'No se pudo cargar el destino desde el backend.');
         setLoading(false);
         return;
       }
@@ -53,8 +54,8 @@ const DestinoDetalle: React.FC = () => {
     try {
       await favoritosService.add(destino.id);
       setFavMsg('¡Agregado a favoritos!');
-    } catch (err: any) {
-      setFavMsg(err.response?.data?.error || 'Error al agregar a favoritos');
+    } catch (err: unknown) {
+      setFavMsg(getApiErrorBody(err)?.error || 'Error al agregar a favoritos');
     }
   };
 
