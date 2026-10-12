@@ -1,35 +1,102 @@
 {
   "info": {
     "name": "Senderia Chile - EP2 API",
-    "description": "Pruebas reproducibles de persistencia PostgreSQL, JWT, roles y CRUD. Ejecutar en orden con backend y base configurados.",
+    "description": "Colección de integración local para PostgreSQL, JWT, permisos, CRUD y Favoritos. Importa y ejecuta en orden con PostgreSQL, el backend y un usuario administrador ya creado. Antes, selecciona un Environment local con adminEmail, adminPassword y turistaPassword. Las solicitudes crean un turista y un destino temporales con nombres únicos y los eliminan al final; si la ejecución se interrumpe, revisa y elimina esos datos de prueba manualmente. No compartas ni exportes el Environment con contraseñas o tokens. Respuestas esperadas: 200/201 en operaciones exitosas; 400 para datos inválidos; 401 sin autenticación; 403 para rol insuficiente; 404 para recursos inexistentes; 409 para email o favorito duplicado.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:3000/api" },
-    { "key": "adminEmail", "value": "admin@senderia.cl" },
-    { "key": "adminPassword", "value": "" },
-    { "key": "token", "value": "" },
-    { "key": "turistaEmail", "value": "" },
-    { "key": "turistaPassword", "value": "" },
-    { "key": "turistaToken", "value": "" },
-    { "key": "categoriaId", "value": "" },
-    { "key": "regionId", "value": "" },
-    { "key": "destinoId", "value": "" },
-    { "key": "usuarioId", "value": "" }
+    { "key": "baseUrl", "value": "http://localhost:3000/api" }
   ],
   "item": [
-    { "name": "Health", "request": { "method": "GET", "url": "{{baseUrl}}/health" }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('API activa', () => pm.response.to.have.status(200));"] } }] },
-    { "name": "Login admin", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}" }, "url": "{{baseUrl}}/auth/login" }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('Login exitoso', () => pm.response.to.have.status(200));", "pm.environment.set('token', pm.response.json().token);"] } }] },
-    { "name": "Registrar turista", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Turista EP2\",\n  \"email\": \"{{turistaEmail}}\",\n  \"password\": \"{{turistaPassword}}\"\n}" }, "url": "{{baseUrl}}/auth/register" }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('Registro persistido de turista', () => pm.response.to.have.status(201));", "pm.collectionVariables.set('turistaToken', pm.response.json().token);"] } }] },
-    { "name": "Login admin", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}" }, "url": "{{baseUrl}}/auth/login" }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('Login exitoso', () => pm.response.to.have.status(200));", "pm.collectionVariables.set('token', pm.response.json().token);"] } }] },
-    { "name": "Usuario actual (JWT)", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/auth/me" }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('Token identifica usuario', () => pm.response.to.have.status(200));"] } }] },
-    { "name": "Listar categorías", "request": { "method": "GET", "url": "{{baseUrl}}/categorias" }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('Lista categorías', () => pm.response.to.have.status(200));", "const rows = pm.response.json().categorias;", "if (rows.length) pm.collectionVariables.set('categoriaId', rows[0].id);"] } }] },
-    { "name": "Listar regiones", "request": { "method": "GET", "url": "{{baseUrl}}/categorias/regiones" }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('Lista regiones', () => pm.response.to.have.status(200));", "const rows = pm.response.json().regiones;", "if (rows.length) pm.collectionVariables.set('regionId', rows[0].id);"] } }] },
-    { "name": "Crear destino (admin CRUD)", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Destino temporal de prueba EP2\",\n  \"descripcion\": \"Registro temporal para demostrar el CRUD\",\n  \"categoria_id\": {{categoriaId}},\n  \"region_id\": {{regionId}},\n  \"latitud\": -33.45,\n  \"longitud\": -70.66,\n  \"horario\": \"Acceso libre\"\n}" }, "url": "{{baseUrl}}/destinos" }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('Destino persistido', () => pm.response.to.have.status(201));", "pm.collectionVariables.set('destinoId', pm.response.json().destino.id);"] } }] },
-    { "name": "Leer destinos", "request": { "method": "GET", "url": "{{baseUrl}}/destinos" }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('Consulta catálogo persistido', () => pm.response.to.have.status(200));", "pm.test('Origen PostgreSQL', () => pm.expect(pm.response.json().source).to.eql('database'));"] } }] },
-    { "name": "Editar destino", "request": { "method": "PUT", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Destino temporal EP2 editado\"\n}" }, "url": "{{baseUrl}}/destinos/{{destinoId}}" }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('Destino editado', () => pm.response.to.have.status(200));"] } }] },
-    { "name": "Permiso admin requerido", "request": { "method": "POST", "body": { "mode": "raw", "raw": "{}" }, "url": "{{baseUrl}}/destinos" }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('Rechaza petición anónima', () => pm.response.to.have.status(401));"] } }] },
-    { "name": "Rol turista no puede crear destinos", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{turistaToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{}" }, "url": "{{baseUrl}}/destinos" }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('Rechaza rol turista', () => pm.response.to.have.status(403));"] } }] },
-    { "name": "Eliminar destino de prueba", "request": { "method": "DELETE", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{baseUrl}}/destinos/{{destinoId}}" }, "event": [{ "listen": "test", "script": { "exec": ["pm.test('Destino eliminado', () => pm.response.to.have.status(200));"] } }] }
+    {
+      "name": "1. Health",
+      "request": { "method": "GET", "url": "{{baseUrl}}/health", "description": "Comprueba que la API está disponible. Espera HTTP 200." },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('API activa (200)', () => pm.response.to.have.status(200));"] } }]
+    },
+    {
+      "name": "2. Login admin",
+      "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/auth/login", "description": "Requiere adminEmail y adminPassword del Environment local. Espera HTTP 200, usuario con rol admin y un JWT." },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const body = pm.response.json();", "pm.test('Login admin exitoso (200)', () => pm.response.to.have.status(200));", "pm.test('La cuenta tiene rol admin y token', () => { pm.expect(body.usuario.rol).to.eql('admin'); pm.expect(body.token).to.be.a('string').and.not.empty; });", "if (pm.response.code === 200) pm.environment.set('adminToken', body.token);"] } }]
+    },
+    {
+      "name": "3. Registrar turista temporal",
+      "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["pm.environment.set('turistaEmail', `postman-${pm.variables.replaceIn('{{$guid}}')}@example.test`);"] } }, { "listen": "test", "script": { "type": "text/javascript", "exec": ["const body = pm.response.json();", "pm.test('Turista registrado (201)', () => pm.response.to.have.status(201));", "pm.test('El registro público crea rol turista', () => pm.expect(body.usuario.rol).to.eql('turista'));", "if (pm.response.code === 201) pm.environment.set('usuarioId', body.usuario.id);"] } }],
+      "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Turista de prueba Postman\",\n  \"email\": \"{{turistaEmail}}\",\n  \"password\": \"{{turistaPassword}}\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/auth/register", "description": "Crea una cuenta temporal de turista. Define turistaPassword en el Environment (mínimo 6 caracteres). El correo se genera nuevo en cada ejecución. Espera HTTP 201; un correo ya registrado respondería 409." }
+    },
+    {
+      "name": "4. Login turista",
+      "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{turistaEmail}}\",\n  \"password\": \"{{turistaPassword}}\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/auth/login", "description": "Inicia sesión con el turista recién registrado. Espera HTTP 200, rol turista y JWT." },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const body = pm.response.json();", "pm.test('Login turista exitoso (200)', () => pm.response.to.have.status(200));", "pm.test('La cuenta tiene rol turista y token', () => { pm.expect(body.usuario.rol).to.eql('turista'); pm.expect(body.token).to.be.a('string').and.not.empty; });", "if (pm.response.code === 200) pm.environment.set('turistaToken', body.token);"] } }]
+    },
+    {
+      "name": "5. Usuario actual (JWT admin)",
+      "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/auth/me", "description": "Comprueba que el JWT admin identifica una cuenta existente. Espera HTTP 200." },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('JWT identifica al usuario (200)', () => pm.response.to.have.status(200));"] } }]
+    },
+    {
+      "name": "6. Listar categorías",
+      "request": { "method": "GET", "url": "{{baseUrl}}/categorias", "description": "Consulta categorías del seed. Espera HTTP 200 y al menos una categoría." },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const rows = pm.response.json().categorias;", "pm.test('Lista categorías (200)', () => pm.response.to.have.status(200));", "pm.test('Hay categorías iniciales', () => pm.expect(rows).to.be.an('array').that.is.not.empty);", "if (rows?.length) pm.environment.set('categoriaId', rows[0].id);"] } }]
+    },
+    {
+      "name": "7. Listar regiones",
+      "request": { "method": "GET", "url": "{{baseUrl}}/categorias/regiones", "description": "Consulta regiones del seed. Espera HTTP 200 y al menos una región." },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const rows = pm.response.json().regiones;", "pm.test('Lista regiones (200)', () => pm.response.to.have.status(200));", "pm.test('Hay regiones iniciales', () => pm.expect(rows).to.be.an('array').that.is.not.empty);", "if (rows?.length) pm.environment.set('regionId', rows[0].id);"] } }]
+    },
+    {
+      "name": "8. Crear destino temporal (admin)",
+      "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["pm.environment.set('destinoNombre', `Destino Postman ${pm.variables.replaceIn('{{$guid}}')}`);"] } }, { "listen": "test", "script": { "type": "text/javascript", "exec": ["const body = pm.response.json();", "pm.test('Destino creado y persistido (201)', () => pm.response.to.have.status(201));", "pm.test('La respuesta incluye el destino creado', () => pm.expect(body.destino.id).to.be.a('number'));", "if (pm.response.code === 201) pm.environment.set('destinoId', body.destino.id);"] } }],
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"{{destinoNombre}}\",\n  \"descripcion\": \"Destino temporal para probar la API de Senderia\",\n  \"categoria_id\": {{categoriaId}},\n  \"region_id\": {{regionId}},\n  \"latitud\": -33.45,\n  \"longitud\": -70.66,\n  \"horario\": \"Acceso libre\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/destinos", "description": "Crea un destino temporal con una categoría y región del seed. Espera HTTP 201. Requiere JWT admin." }
+    },
+    {
+      "name": "9. Leer destinos (persistencia PostgreSQL)",
+      "request": { "method": "GET", "url": "{{baseUrl}}/destinos", "description": "Comprueba que el catálogo se consulta desde PostgreSQL. Espera HTTP 200 y source=database." },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const body = pm.response.json();", "pm.test('Consulta catálogo (200)', () => pm.response.to.have.status(200));", "pm.test('La API informa origen database', () => pm.expect(body.source).to.eql('database'));", "pm.test('Incluye el destino temporal', () => pm.expect(body.destinos.some((item) => item.id === Number(pm.environment.get('destinoId')))).to.eql(true));"] } }]
+    },
+    {
+      "name": "10. Favoritos: listar sin autenticación",
+      "request": { "method": "GET", "url": "{{baseUrl}}/favoritos", "description": "Comprueba que Favoritos requiere JWT. Espera HTTP 401." },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Favoritos rechaza solicitud anónima (401)', () => pm.response.to.have.status(401));"] } }]
+    },
+    {
+      "name": "11. Agregar destino a Favoritos (turista)",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{turistaToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"destino_id\": {{destinoId}}\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/favoritos", "description": "Agrega el destino temporal a la cuenta turista. Espera HTTP 201 y un objeto favorito con id." },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const body = pm.response.json();", "pm.test('Favorito agregado (201)', () => pm.response.to.have.status(201));", "pm.test('La respuesta incluye el favorito creado', () => pm.expect(body.favorito.id).to.be.a('number'));", "if (pm.response.code === 201) pm.environment.set('favoritoId', body.favorito.id);"] } }]
+    },
+    {
+      "name": "12. Listar Favoritos del turista",
+      "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{turistaToken}}" }], "url": "{{baseUrl}}/favoritos", "description": "Comprueba que el favorito se guardó en PostgreSQL y pertenece al usuario autenticado. Espera HTTP 200 y que aparezca el destino temporal." },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const rows = pm.response.json().favoritos;", "pm.test('Favoritos consultados (200)', () => pm.response.to.have.status(200));", "pm.test('El destino creado aparece en favoritos', () => pm.expect(rows.some((item) => item.id === Number(pm.environment.get('destinoId')))).to.eql(true));"] } }]
+    },
+    {
+      "name": "13. Favoritos: rechazar duplicado",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{turistaToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"destino_id\": {{destinoId}}\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/favoritos", "description": "Intenta agregar otra vez el mismo destino. Espera HTTP 409 y error de duplicado." },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Favorito duplicado rechazado (409)', () => pm.response.to.have.status(409));", "pm.test('La respuesta explica el duplicado', () => pm.expect(pm.response.json().error).to.include('ya está'));"] } }]
+    },
+    {
+      "name": "14. Quitar Favorito",
+      "request": { "method": "DELETE", "header": [{ "key": "Authorization", "value": "Bearer {{turistaToken}}" }], "url": "{{baseUrl}}/favoritos/{{favoritoId}}", "description": "Elimina el favorito temporal del usuario. Espera HTTP 200." },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Favorito eliminado (200)', () => pm.response.to.have.status(200));"] } }]
+    },
+    {
+      "name": "15. Confirmar Favorito eliminado",
+      "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{turistaToken}}" }], "url": "{{baseUrl}}/favoritos", "description": "Verifica que el destino ya no aparece en favoritos tras eliminarlo. Espera HTTP 200 y ausencia del destino temporal." },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const rows = pm.response.json().favoritos;", "pm.test('La lista se consulta (200)', () => pm.response.to.have.status(200));", "pm.test('El destino ya no está en favoritos', () => pm.expect(rows.some((item) => item.id === Number(pm.environment.get('destinoId')))).to.eql(false));"] } }]
+    },
+    {
+      "name": "16. Rol turista no puede crear destinos",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{turistaToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/destinos", "description": "Comprueba control de roles: un turista no puede crear destinos. Espera HTTP 403." },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Rol turista rechazado (403)', () => pm.response.to.have.status(403));"] } }]
+    },
+    {
+      "name": "17. Limpiar turista temporal (admin)",
+      "request": { "method": "DELETE", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/usuarios/{{usuarioId}}", "description": "Elimina la cuenta temporal de Postman y sus relaciones de Favoritos. Espera HTTP 200." },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Turista temporal eliminado (200)', () => pm.response.to.have.status(200));"] } }]
+    },
+    {
+      "name": "18. Limpiar destino temporal (admin)",
+      "request": { "method": "DELETE", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/destinos/{{destinoId}}", "description": "Elimina el destino temporal creado por esta ejecución. Espera HTTP 200." },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Destino temporal eliminado (200)', () => pm.response.to.have.status(200));"] } }]
+    }
   ]
 }

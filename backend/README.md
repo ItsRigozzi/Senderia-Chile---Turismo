@@ -4,32 +4,33 @@ API REST construida con Node.js, Express, TypeScript y PostgreSQL. Esta carpeta 
 
 ## Requisitos
 
-- Node.js 20.19 o posterior y npm.
+- Node.js 22.12 o posterior y npm. Esta versión cumple el requisito de Vite usado por el frontend.
 - PostgreSQL 14 o posterior, con el servicio iniciado.
-- PowerShell en Windows para el script de inicialización incluido.
+- Windows y PowerShell para ejecutar los comandos de esta guía.
 
 ## Configurar base de datos
 
-1. Copia `.env.example` como `.env` y completa `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` y `DB_PASSWORD`. Define también un `JWT_SECRET` aleatorio de al menos 32 caracteres. No compartas ni subas `.env`.
-2. Desde la raíz del repositorio, inicializa el esquema y los datos:
+1. Si aún no existe, copia `.env.example` como `.env` y completa `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` y `DB_SSL`. Define un `JWT_SECRET` aleatorio de al menos 32 caracteres. No sobrescribas un `.env` ya configurado ni lo compartas.
+2. El script puede crear la base nombrada en `DB_NAME` si no existe. También puedes crearla manualmente en pgAdmin: **Databases → Create → Database…**, con el mismo nombre y servidor/puerto configurados en `.env`.
+3. Desde la raíz del repositorio, inicializa las tablas y los datos:
 
    ```powershell
-   ./backend/scripts/init-db.ps1
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\backend\scripts\init-db.ps1
    ```
 
-   `init.sql` crea tablas, claves foráneas e índices; `seed.sql` carga regiones, categorías y destinos de muestra y se puede ejecutar repetidamente.
+   La excepción de política se aplica solo al proceso iniciado por ese comando. El script lee `.env`, comprueba la conexión, crea la base si hace falta y ejecuta `init.sql` seguido de `seed.sql`. Este último carga regiones, categorías y destinos de muestra y se puede ejecutar repetidamente.
 
 ## Crear admin e iniciar
 
 Desde la raíz del repositorio:
 
 ```powershell
-cd backend
+cd .\backend
 $env:ADMIN_NAME = 'Administrador Senderia'
 $env:ADMIN_EMAIL = 'admin@senderia.cl'
-$env:ADMIN_PASSWORD = 'reemplazar-por-una-clave-privada-de-12-caracteres-o-mas'
-npm install
-npm run admin:create
+$env:ADMIN_PASSWORD = 'escribe-una-clave-privada-de-12-caracteres-o-mas'
+npm.cmd install
+npm.cmd run admin:create
 npm.cmd run dev
 ```
 
@@ -37,10 +38,24 @@ La API queda en `http://localhost:3000/api`. El registro público solo crea turi
 
 ## Pruebas
 
+Desde la raíz del repositorio, ejecuta las pruebas del backend así:
+
 ```powershell
-npm test
+cd .\backend
+npm.cmd test
 ```
 
-Para la prueba real de integración, con PostgreSQL y la API activos, define `ADMIN_EMAIL` y `ADMIN_PASSWORD` en la terminal y ejecuta `npm.cmd run test:api`. La colección Postman está en `postman/Senderia-EP2.postman_collection.json`.
+Este comando compila el backend y ejecuta sus pruebas de validación.
 
-Los endpoints, roles, respuestas y pasos detallados están en el README de la rama integrada del proyecto.
+Para la prueba de integración con PostgreSQL, deja PostgreSQL y el backend activos. Abre otra terminal PowerShell desde la raíz del repositorio y ejecuta:
+
+```powershell
+cd .\backend
+$env:ADMIN_EMAIL = 'admin@senderia.cl'
+$env:ADMIN_PASSWORD = 'tu-contraseña-admin-actual'
+npm.cmd run test:api
+```
+
+Usa las credenciales de un administrador que ya exista en tu base local. No guardes ni compartas la contraseña. La colección Postman está en `backend/postman/Senderia-EP2.postman_collection.json`; la evidencia está en `backend/postman/evidencia/`.
+
+La guía completa de ejecución, endpoints, roles, respuestas y pruebas está en el [README principal del proyecto](../README.md).
