@@ -4,7 +4,7 @@ Interfaz web y móvil construida con Ionic, React y TypeScript. La aplicación c
 
 ## Requisitos
 
-- Node.js 20.19 o posterior y npm.
+- Node.js 22.12 o posterior y npm.
 - Backend Senderia activo en `http://localhost:3000/api`, o una URL configurada con `VITE_API_URL`.
 
 ## Instalación y ejecución
@@ -14,6 +14,8 @@ Desde la raíz del repositorio:
 ```powershell
 cd frontend
 npm install
+ionic.cmd serve
+o
 npm.cmd run dev
 ```
 
