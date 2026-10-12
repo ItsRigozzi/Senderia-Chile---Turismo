@@ -1,0 +1,652 @@
+{
+	"id": "59fb56f6-9680-47ad-b729-c09af4d85ad9",
+	"name": "Senderia Chile - EP2 API",
+	"timestamp": "2026-10-09T21:55:09.445Z",
+	"collection_id": "58468645-36d65bac-27b3-4aa9-b926-2c48b946de64",
+	"folder_id": 0,
+	"environment_id": "58468645-82a64a81-5242-491b-aeac-2d4ec0a5fe61",
+	"totalPass": 30,
+	"delay": 0,
+	"persist": true,
+	"status": "finished",
+	"startedAt": "2026-10-09T21:55:06.546Z",
+	"totalFail": 0,
+	"results": [
+		{
+			"id": "a1a512ee-0863-4189-a6b9-aca5cbccf729",
+			"name": "1. Health",
+			"url": "http://localhost:3000/api/health",
+			"time": 57,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"API activa (200)": true
+			},
+			"testPassFailCounts": {
+				"API activa (200)": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				57
+			],
+			"allTests": [
+				{
+					"API activa (200)": true
+				}
+			]
+		},
+		{
+			"id": "833e2208-b280-4b4c-bda7-290cfcb41f19",
+			"name": "2. Login admin",
+			"url": "http://localhost:3000/api/auth/login",
+			"time": 435,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Login admin exitoso (200)": true,
+				"La cuenta tiene rol admin y token": true
+			},
+			"testPassFailCounts": {
+				"Login admin exitoso (200)": {
+					"pass": 1,
+					"fail": 0
+				},
+				"La cuenta tiene rol admin y token": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				435
+			],
+			"allTests": [
+				{
+					"Login admin exitoso (200)": true,
+					"La cuenta tiene rol admin y token": true
+				}
+			]
+		},
+		{
+			"id": "ac32e3c0-68f9-41de-8ae0-a62e2ab17c67",
+			"name": "3. Registrar turista temporal",
+			"url": "http://localhost:3000/api/auth/register",
+			"time": 106,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {
+				"Turista registrado (201)": true,
+				"El registro público crea rol turista": true
+			},
+			"testPassFailCounts": {
+				"Turista registrado (201)": {
+					"pass": 1,
+					"fail": 0
+				},
+				"El registro público crea rol turista": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				106
+			],
+			"allTests": [
+				{
+					"Turista registrado (201)": true,
+					"El registro público crea rol turista": true
+				}
+			]
+		},
+		{
+			"id": "ea4d949c-e164-4b30-972a-455d011e3732",
+			"name": "4. Login turista",
+			"url": "http://localhost:3000/api/auth/login",
+			"time": 92,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Login turista exitoso (200)": true,
+				"La cuenta tiene rol turista y token": true
+			},
+			"testPassFailCounts": {
+				"Login turista exitoso (200)": {
+					"pass": 1,
+					"fail": 0
+				},
+				"La cuenta tiene rol turista y token": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				92
+			],
+			"allTests": [
+				{
+					"Login turista exitoso (200)": true,
+					"La cuenta tiene rol turista y token": true
+				}
+			]
+		},
+		{
+			"id": "53061dd1-0565-45f3-a02d-0755625e9538",
+			"name": "5. Usuario actual (JWT admin)",
+			"url": "http://localhost:3000/api/auth/me",
+			"time": 6,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"JWT identifica al usuario (200)": true
+			},
+			"testPassFailCounts": {
+				"JWT identifica al usuario (200)": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				6
+			],
+			"allTests": [
+				{
+					"JWT identifica al usuario (200)": true
+				}
+			]
+		},
+		{
+			"id": "1e98e667-f9ca-4088-8d7b-8a5c45f1b130",
+			"name": "6. Listar categorías",
+			"url": "http://localhost:3000/api/categorias",
+			"time": 15,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Lista categorías (200)": true,
+				"Hay categorías iniciales": true
+			},
+			"testPassFailCounts": {
+				"Lista categorías (200)": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Hay categorías iniciales": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				15
+			],
+			"allTests": [
+				{
+					"Lista categorías (200)": true,
+					"Hay categorías iniciales": true
+				}
+			]
+		},
+		{
+			"id": "d77c687f-c878-41d3-80de-f47d38a21bf6",
+			"name": "7. Listar regiones",
+			"url": "http://localhost:3000/api/categorias/regiones",
+			"time": 13,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Lista regiones (200)": true,
+				"Hay regiones iniciales": true
+			},
+			"testPassFailCounts": {
+				"Lista regiones (200)": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Hay regiones iniciales": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				13
+			],
+			"allTests": [
+				{
+					"Lista regiones (200)": true,
+					"Hay regiones iniciales": true
+				}
+			]
+		},
+		{
+			"id": "a4b02c73-8a0e-49db-a57a-2c4e3d6ec6f1",
+			"name": "8. Crear destino temporal (admin)",
+			"url": "http://localhost:3000/api/destinos",
+			"time": 25,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {
+				"Destino creado y persistido (201)": true,
+				"La respuesta incluye el destino creado": true
+			},
+			"testPassFailCounts": {
+				"Destino creado y persistido (201)": {
+					"pass": 1,
+					"fail": 0
+				},
+				"La respuesta incluye el destino creado": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				25
+			],
+			"allTests": [
+				{
+					"Destino creado y persistido (201)": true,
+					"La respuesta incluye el destino creado": true
+				}
+			]
+		},
+		{
+			"id": "7e04ecb4-c2b3-4d87-8d6b-db9837e5b2ff",
+			"name": "9. Leer destinos (persistencia PostgreSQL)",
+			"url": "http://localhost:3000/api/destinos",
+			"time": 5,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Consulta catálogo (200)": true,
+				"La API informa origen database": true,
+				"Incluye el destino temporal": true
+			},
+			"testPassFailCounts": {
+				"Consulta catálogo (200)": {
+					"pass": 1,
+					"fail": 0
+				},
+				"La API informa origen database": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Incluye el destino temporal": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				5
+			],
+			"allTests": [
+				{
+					"Consulta catálogo (200)": true,
+					"La API informa origen database": true,
+					"Incluye el destino temporal": true
+				}
+			]
+		},
+		{
+			"id": "95ddae73-88b9-4398-bcb9-9441019b2fa3",
+			"name": "10. Favoritos: listar sin autenticación",
+			"url": "http://localhost:3000/api/favoritos",
+			"time": 3,
+			"responseCode": {
+				"code": 401,
+				"name": "Unauthorized"
+			},
+			"tests": {
+				"Favoritos rechaza solicitud anónima (401)": true
+			},
+			"testPassFailCounts": {
+				"Favoritos rechaza solicitud anónima (401)": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				3
+			],
+			"allTests": [
+				{
+					"Favoritos rechaza solicitud anónima (401)": true
+				}
+			]
+		},
+		{
+			"id": "cde0cde8-7bdb-4b75-a41d-50f4b045e05d",
+			"name": "11. Agregar destino a Favoritos (turista)",
+			"url": "http://localhost:3000/api/favoritos",
+			"time": 16,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {
+				"Favorito agregado (201)": true,
+				"La respuesta incluye el favorito creado": true
+			},
+			"testPassFailCounts": {
+				"Favorito agregado (201)": {
+					"pass": 1,
+					"fail": 0
+				},
+				"La respuesta incluye el favorito creado": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				16
+			],
+			"allTests": [
+				{
+					"Favorito agregado (201)": true,
+					"La respuesta incluye el favorito creado": true
+				}
+			]
+		},
+		{
+			"id": "b95570eb-0b76-4164-b324-02859227b83e",
+			"name": "12. Listar Favoritos del turista",
+			"url": "http://localhost:3000/api/favoritos",
+			"time": 10,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Favoritos consultados (200)": true,
+				"El destino creado aparece en favoritos": true
+			},
+			"testPassFailCounts": {
+				"Favoritos consultados (200)": {
+					"pass": 1,
+					"fail": 0
+				},
+				"El destino creado aparece en favoritos": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				10
+			],
+			"allTests": [
+				{
+					"Favoritos consultados (200)": true,
+					"El destino creado aparece en favoritos": true
+				}
+			]
+		},
+		{
+			"id": "59fce10a-4ff3-411c-8fde-026e6ee31b05",
+			"name": "13. Favoritos: rechazar duplicado",
+			"url": "http://localhost:3000/api/favoritos",
+			"time": 5,
+			"responseCode": {
+				"code": 409,
+				"name": "Conflict"
+			},
+			"tests": {
+				"Favorito duplicado rechazado (409)": true,
+				"La respuesta explica el duplicado": true
+			},
+			"testPassFailCounts": {
+				"Favorito duplicado rechazado (409)": {
+					"pass": 1,
+					"fail": 0
+				},
+				"La respuesta explica el duplicado": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				5
+			],
+			"allTests": [
+				{
+					"Favorito duplicado rechazado (409)": true,
+					"La respuesta explica el duplicado": true
+				}
+			]
+		},
+		{
+			"id": "a770126c-47c5-41f2-9f52-08ca40eda677",
+			"name": "14. Quitar Favorito",
+			"url": "http://localhost:3000/api/favoritos/8",
+			"time": 11,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Favorito eliminado (200)": true
+			},
+			"testPassFailCounts": {
+				"Favorito eliminado (200)": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				11
+			],
+			"allTests": [
+				{
+					"Favorito eliminado (200)": true
+				}
+			]
+		},
+		{
+			"id": "9307195f-eb21-4f9f-8bec-df55cff670ae",
+			"name": "15. Confirmar Favorito eliminado",
+			"url": "http://localhost:3000/api/favoritos",
+			"time": 5,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"La lista se consulta (200)": true,
+				"El destino ya no está en favoritos": true
+			},
+			"testPassFailCounts": {
+				"La lista se consulta (200)": {
+					"pass": 1,
+					"fail": 0
+				},
+				"El destino ya no está en favoritos": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				5
+			],
+			"allTests": [
+				{
+					"La lista se consulta (200)": true,
+					"El destino ya no está en favoritos": true
+				}
+			]
+		},
+		{
+			"id": "3e4bc62c-f3d4-4e1a-8efc-a4a678588357",
+			"name": "16. Rol turista no puede crear destinos",
+			"url": "http://localhost:3000/api/destinos",
+			"time": 4,
+			"responseCode": {
+				"code": 403,
+				"name": "Forbidden"
+			},
+			"tests": {
+				"Rol turista rechazado (403)": true
+			},
+			"testPassFailCounts": {
+				"Rol turista rechazado (403)": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				4
+			],
+			"allTests": [
+				{
+					"Rol turista rechazado (403)": true
+				}
+			]
+		},
+		{
+			"id": "622774cd-4391-4cef-b16c-6c81080290a2",
+			"name": "17. Limpiar turista temporal (admin)",
+			"url": "http://localhost:3000/api/usuarios/3",
+			"time": 5,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Turista temporal eliminado (200)": true
+			},
+			"testPassFailCounts": {
+				"Turista temporal eliminado (200)": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				5
+			],
+			"allTests": [
+				{
+					"Turista temporal eliminado (200)": true
+				}
+			]
+		},
+		{
+			"id": "e522b982-ac39-4eae-877f-7d7729b6ace8",
+			"name": "18. Limpiar destino temporal (admin)",
+			"url": "http://localhost:3000/api/destinos/5",
+			"time": 6,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Destino temporal eliminado (200)": true
+			},
+			"testPassFailCounts": {
+				"Destino temporal eliminado (200)": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				6
+			],
+			"allTests": [
+				{
+					"Destino temporal eliminado (200)": true
+				}
+			]
+		}
+	],
+	"count": 1,
+	"totalTime": 819,
+	"collection": {
+		"requests": [
+			{
+				"id": "a1a512ee-0863-4189-a6b9-aca5cbccf729",
+				"method": "GET"
+			},
+			{
+				"id": "833e2208-b280-4b4c-bda7-290cfcb41f19",
+				"method": "POST"
+			},
+			{
+				"id": "ac32e3c0-68f9-41de-8ae0-a62e2ab17c67",
+				"method": "POST"
+			},
+			{
+				"id": "ea4d949c-e164-4b30-972a-455d011e3732",
+				"method": "POST"
+			},
+			{
+				"id": "53061dd1-0565-45f3-a02d-0755625e9538",
+				"method": "GET"
+			},
+			{
+				"id": "1e98e667-f9ca-4088-8d7b-8a5c45f1b130",
+				"method": "GET"
+			},
+			{
+				"id": "d77c687f-c878-41d3-80de-f47d38a21bf6",
+				"method": "GET"
+			},
+			{
+				"id": "a4b02c73-8a0e-49db-a57a-2c4e3d6ec6f1",
+				"method": "POST"
+			},
+			{
+				"id": "7e04ecb4-c2b3-4d87-8d6b-db9837e5b2ff",
+				"method": "GET"
+			},
+			{
+				"id": "95ddae73-88b9-4398-bcb9-9441019b2fa3",
+				"method": "GET"
+			},
+			{
+				"id": "cde0cde8-7bdb-4b75-a41d-50f4b045e05d",
+				"method": "POST"
+			},
+			{
+				"id": "b95570eb-0b76-4164-b324-02859227b83e",
+				"method": "GET"
+			},
+			{
+				"id": "59fce10a-4ff3-411c-8fde-026e6ee31b05",
+				"method": "POST"
+			},
+			{
+				"id": "a770126c-47c5-41f2-9f52-08ca40eda677",
+				"method": "DELETE"
+			},
+			{
+				"id": "9307195f-eb21-4f9f-8bec-df55cff670ae",
+				"method": "GET"
+			},
+			{
+				"id": "3e4bc62c-f3d4-4e1a-8efc-a4a678588357",
+				"method": "POST"
+			},
+			{
+				"id": "622774cd-4391-4cef-b16c-6c81080290a2",
+				"method": "DELETE"
+			},
+			{
+				"id": "e522b982-ac39-4eae-877f-7d7729b6ace8",
+				"method": "DELETE"
+			}
+		]
+	}
+}
