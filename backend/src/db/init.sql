@@ -35,14 +35,36 @@ CREATE TABLE IF NOT EXISTS destinos (
   descripcion TEXT,
   categoria_id INTEGER NOT NULL REFERENCES categorias(id),
   region_id INTEGER NOT NULL REFERENCES regiones(id),
-  latitud DOUBLE PRECISION NOT NULL,
-  longitud DOUBLE PRECISION NOT NULL,
+  latitud DOUBLE PRECISION NOT NULL CONSTRAINT chk_destinos_latitud_rango CHECK (latitud BETWEEN -90 AND 90),
+  longitud DOUBLE PRECISION NOT NULL CONSTRAINT chk_destinos_longitud_rango CHECK (longitud BETWEEN -180 AND 180),
   horario VARCHAR(255),
   condiciones_acceso TEXT,
   imagen_url VARCHAR(500),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Añade las restricciones también a bases existentes creadas por versiones previas del script.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'chk_destinos_latitud_rango'
+      AND conrelid = 'public.destinos'::regclass
+  ) THEN
+    ALTER TABLE public.destinos
+      ADD CONSTRAINT chk_destinos_latitud_rango CHECK (latitud BETWEEN -90 AND 90);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'chk_destinos_longitud_rango'
+      AND conrelid = 'public.destinos'::regclass
+  ) THEN
+    ALTER TABLE public.destinos
+      ADD CONSTRAINT chk_destinos_longitud_rango CHECK (longitud BETWEEN -180 AND 180);
+  END IF;
+END $$;
 
 -- Tabla de favoritos (relación usuario-destino)
 CREATE TABLE IF NOT EXISTS favoritos (

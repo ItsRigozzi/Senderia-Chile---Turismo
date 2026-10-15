@@ -1,22 +1,22 @@
 {
-	"id": "59fb56f6-9680-47ad-b729-c09af4d85ad9",
-	"name": "Senderia Chile - EP2 API",
-	"timestamp": "2026-10-09T21:55:09.445Z",
-	"collection_id": "58468645-36d65bac-27b3-4aa9-b926-2c48b946de64",
+	"id": "f458e4d3-fecb-4544-8da8-7f676180751f",
+	"name": "Senderia Chile - EP2 API Copy",
+	"timestamp": "2026-10-15T17:03:02.569Z",
+	"collection_id": "58468645-a406df09-1015-4fe1-a160-f46e621a3843",
 	"folder_id": 0,
 	"environment_id": "58468645-82a64a81-5242-491b-aeac-2d4ec0a5fe61",
-	"totalPass": 30,
+	"totalPass": 47,
 	"delay": 0,
-	"persist": true,
+	"persist": false,
 	"status": "finished",
-	"startedAt": "2026-10-09T21:55:06.546Z",
+	"startedAt": "2026-10-15T17:02:58.594Z",
 	"totalFail": 0,
 	"results": [
 		{
-			"id": "a1a512ee-0863-4189-a6b9-aca5cbccf729",
+			"id": "9a44ed47-6cab-46cb-9957-22ab91b66d49",
 			"name": "1. Health",
 			"url": "http://localhost:3000/api/health",
-			"time": 57,
+			"time": 77,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -31,7 +31,7 @@
 				}
 			},
 			"times": [
-				57
+				77
 			],
 			"allTests": [
 				{
@@ -40,10 +40,10 @@
 			]
 		},
 		{
-			"id": "833e2208-b280-4b4c-bda7-290cfcb41f19",
+			"id": "08584373-319f-4496-b568-e18610f0db8c",
 			"name": "2. Login admin",
 			"url": "http://localhost:3000/api/auth/login",
-			"time": 435,
+			"time": 660,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -63,7 +63,7 @@
 				}
 			},
 			"times": [
-				435
+				660
 			],
 			"allTests": [
 				{
@@ -73,10 +73,10 @@
 			]
 		},
 		{
-			"id": "ac32e3c0-68f9-41de-8ae0-a62e2ab17c67",
+			"id": "72700c84-c730-46f1-9008-2682f7aa1011",
 			"name": "3. Registrar turista temporal",
 			"url": "http://localhost:3000/api/auth/register",
-			"time": 106,
+			"time": 133,
 			"responseCode": {
 				"code": 201,
 				"name": "Created"
@@ -96,7 +96,7 @@
 				}
 			},
 			"times": [
-				106
+				133
 			],
 			"allTests": [
 				{
@@ -106,10 +106,10 @@
 			]
 		},
 		{
-			"id": "ea4d949c-e164-4b30-972a-455d011e3732",
+			"id": "6d13b797-06c8-4573-a9c8-2865fa9c58bb",
 			"name": "4. Login turista",
 			"url": "http://localhost:3000/api/auth/login",
-			"time": 92,
+			"time": 129,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -129,7 +129,7 @@
 				}
 			},
 			"times": [
-				92
+				129
 			],
 			"allTests": [
 				{
@@ -139,10 +139,82 @@
 			]
 		},
 		{
-			"id": "53061dd1-0565-45f3-a02d-0755625e9538",
+			"id": "a7ae2581-dbff-4a96-bd9e-82baa25f8b41",
+			"name": "4A. Listar usuarios sin hashes (admin)",
+			"url": "http://localhost:3000/api/usuarios",
+			"time": 9,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Usuarios listados (200)": true,
+				"No se exponen hashes de contraseña": true,
+				"Incluye al turista temporal": true
+			},
+			"testPassFailCounts": {
+				"Usuarios listados (200)": {
+					"pass": 1,
+					"fail": 0
+				},
+				"No se exponen hashes de contraseña": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Incluye al turista temporal": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				9
+			],
+			"allTests": [
+				{
+					"Usuarios listados (200)": true,
+					"No se exponen hashes de contraseña": true,
+					"Incluye al turista temporal": true
+				}
+			]
+		},
+		{
+			"id": "ea457eb2-d289-4ee6-aff2-436d4cae1c8a",
+			"name": "4B. Actualizar turista temporal (admin)",
+			"url": "http://localhost:3000/api/usuarios/6",
+			"time": 10,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Usuario actualizado (200)": true,
+				"La respuesta confirma el cambio": true
+			},
+			"testPassFailCounts": {
+				"Usuario actualizado (200)": {
+					"pass": 1,
+					"fail": 0
+				},
+				"La respuesta confirma el cambio": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				10
+			],
+			"allTests": [
+				{
+					"Usuario actualizado (200)": true,
+					"La respuesta confirma el cambio": true
+				}
+			]
+		},
+		{
+			"id": "00da58d9-04e8-4525-bf6f-d4b544602c6f",
 			"name": "5. Usuario actual (JWT admin)",
 			"url": "http://localhost:3000/api/auth/me",
-			"time": 6,
+			"time": 7,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -157,7 +229,7 @@
 				}
 			},
 			"times": [
-				6
+				7
 			],
 			"allTests": [
 				{
@@ -166,10 +238,10 @@
 			]
 		},
 		{
-			"id": "1e98e667-f9ca-4088-8d7b-8a5c45f1b130",
+			"id": "9193e151-3d71-4c57-ae21-7edac9226083",
 			"name": "6. Listar categorías",
 			"url": "http://localhost:3000/api/categorias",
-			"time": 15,
+			"time": 8,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -189,7 +261,7 @@
 				}
 			},
 			"times": [
-				15
+				8
 			],
 			"allTests": [
 				{
@@ -199,10 +271,10 @@
 			]
 		},
 		{
-			"id": "d77c687f-c878-41d3-80de-f47d38a21bf6",
+			"id": "997b92fa-d3f3-4f78-9d67-472c3ea86a7e",
 			"name": "7. Listar regiones",
 			"url": "http://localhost:3000/api/categorias/regiones",
-			"time": 13,
+			"time": 6,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -222,7 +294,7 @@
 				}
 			},
 			"times": [
-				13
+				6
 			],
 			"allTests": [
 				{
@@ -232,10 +304,76 @@
 			]
 		},
 		{
-			"id": "a4b02c73-8a0e-49db-a57a-2c4e3d6ec6f1",
+			"id": "c570cf30-d35a-44de-a55f-22d4d0ba7e82",
+			"name": "7A. Crear categoría temporal (admin)",
+			"url": "http://localhost:3000/api/categorias",
+			"time": 10,
+			"responseCode": {
+				"code": 201,
+				"name": "Created"
+			},
+			"tests": {
+				"Categoría creada (201)": true,
+				"La respuesta incluye la categoría": true
+			},
+			"testPassFailCounts": {
+				"Categoría creada (201)": {
+					"pass": 1,
+					"fail": 0
+				},
+				"La respuesta incluye la categoría": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				10
+			],
+			"allTests": [
+				{
+					"Categoría creada (201)": true,
+					"La respuesta incluye la categoría": true
+				}
+			]
+		},
+		{
+			"id": "a4a0d678-0ad7-4a1f-a030-b6ee815a2f38",
+			"name": "7B. Actualizar categoría temporal (admin)",
+			"url": "http://localhost:3000/api/categorias/10",
+			"time": 5,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Categoría actualizada (200)": true,
+				"La respuesta refleja la descripción": true
+			},
+			"testPassFailCounts": {
+				"Categoría actualizada (200)": {
+					"pass": 1,
+					"fail": 0
+				},
+				"La respuesta refleja la descripción": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				5
+			],
+			"allTests": [
+				{
+					"Categoría actualizada (200)": true,
+					"La respuesta refleja la descripción": true
+				}
+			]
+		},
+		{
+			"id": "956c7c5c-c018-4fb9-9959-3876827f02aa",
 			"name": "8. Crear destino temporal (admin)",
 			"url": "http://localhost:3000/api/destinos",
-			"time": 25,
+			"time": 11,
 			"responseCode": {
 				"code": 201,
 				"name": "Created"
@@ -255,7 +393,7 @@
 				}
 			},
 			"times": [
-				25
+				11
 			],
 			"allTests": [
 				{
@@ -265,10 +403,37 @@
 			]
 		},
 		{
-			"id": "7e04ecb4-c2b3-4d87-8d6b-db9837e5b2ff",
+			"id": "319e2c7e-b519-48d7-98f3-0085d3253304",
+			"name": "8A. Rechazar eliminación de categoría asociada",
+			"url": "http://localhost:3000/api/categorias/10",
+			"time": 5,
+			"responseCode": {
+				"code": 409,
+				"name": "Conflict"
+			},
+			"tests": {
+				"Categoría asociada protegida (409)": true
+			},
+			"testPassFailCounts": {
+				"Categoría asociada protegida (409)": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				5
+			],
+			"allTests": [
+				{
+					"Categoría asociada protegida (409)": true
+				}
+			]
+		},
+		{
+			"id": "27ac2dc8-534d-4e6c-9edc-1336bd93230c",
 			"name": "9. Leer destinos (persistencia PostgreSQL)",
 			"url": "http://localhost:3000/api/destinos",
-			"time": 5,
+			"time": 3,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -293,7 +458,7 @@
 				}
 			},
 			"times": [
-				5
+				3
 			],
 			"allTests": [
 				{
@@ -304,10 +469,109 @@
 			]
 		},
 		{
-			"id": "95ddae73-88b9-4398-bcb9-9441019b2fa3",
+			"id": "a92ae6ed-486c-4ca1-82ba-3c9871d34f3a",
+			"name": "9A. Leer destino temporal por ID",
+			"url": "http://localhost:3000/api/destinos/7",
+			"time": 8,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Detalle de destino (200)": true,
+				"El detalle corresponde al destino creado": true,
+				"El origen es la base de datos": true
+			},
+			"testPassFailCounts": {
+				"Detalle de destino (200)": {
+					"pass": 1,
+					"fail": 0
+				},
+				"El detalle corresponde al destino creado": {
+					"pass": 1,
+					"fail": 0
+				},
+				"El origen es la base de datos": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				8
+			],
+			"allTests": [
+				{
+					"Detalle de destino (200)": true,
+					"El detalle corresponde al destino creado": true,
+					"El origen es la base de datos": true
+				}
+			]
+		},
+		{
+			"id": "7e07c6d5-9be7-4199-bb9f-cf5a58b64bd3",
+			"name": "9B. Rechazar ID de destino inválido",
+			"url": "http://localhost:3000/api/destinos/no-es-id",
+			"time": 3,
+			"responseCode": {
+				"code": 400,
+				"name": "Bad Request"
+			},
+			"tests": {
+				"ID no numérico rechazado (400)": true
+			},
+			"testPassFailCounts": {
+				"ID no numérico rechazado (400)": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				3
+			],
+			"allTests": [
+				{
+					"ID no numérico rechazado (400)": true
+				}
+			]
+		},
+		{
+			"id": "a90e1067-9fbf-4121-baba-bc77a16874df",
+			"name": "9C. Actualizar destino temporal (admin)",
+			"url": "http://localhost:3000/api/destinos/7",
+			"time": 6,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Destino actualizado (200)": true,
+				"La respuesta confirma el cambio": true
+			},
+			"testPassFailCounts": {
+				"Destino actualizado (200)": {
+					"pass": 1,
+					"fail": 0
+				},
+				"La respuesta confirma el cambio": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				6
+			],
+			"allTests": [
+				{
+					"Destino actualizado (200)": true,
+					"La respuesta confirma el cambio": true
+				}
+			]
+		},
+		{
+			"id": "5dbe23b0-2a7d-46bf-b523-0e397bd4c27e",
 			"name": "10. Favoritos: listar sin autenticación",
 			"url": "http://localhost:3000/api/favoritos",
-			"time": 3,
+			"time": 2,
 			"responseCode": {
 				"code": 401,
 				"name": "Unauthorized"
@@ -322,7 +586,7 @@
 				}
 			},
 			"times": [
-				3
+				2
 			],
 			"allTests": [
 				{
@@ -331,10 +595,10 @@
 			]
 		},
 		{
-			"id": "cde0cde8-7bdb-4b75-a41d-50f4b045e05d",
+			"id": "2bc3bab2-d93f-474e-bfa2-50995aa68ac9",
 			"name": "11. Agregar destino a Favoritos (turista)",
 			"url": "http://localhost:3000/api/favoritos",
-			"time": 16,
+			"time": 13,
 			"responseCode": {
 				"code": 201,
 				"name": "Created"
@@ -354,7 +618,7 @@
 				}
 			},
 			"times": [
-				16
+				13
 			],
 			"allTests": [
 				{
@@ -364,10 +628,10 @@
 			]
 		},
 		{
-			"id": "b95570eb-0b76-4164-b324-02859227b83e",
+			"id": "51f431aa-6f2d-4525-9c66-7f3c88ae7341",
 			"name": "12. Listar Favoritos del turista",
 			"url": "http://localhost:3000/api/favoritos",
-			"time": 10,
+			"time": 7,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -387,7 +651,7 @@
 				}
 			},
 			"times": [
-				10
+				7
 			],
 			"allTests": [
 				{
@@ -397,10 +661,10 @@
 			]
 		},
 		{
-			"id": "59fce10a-4ff3-411c-8fde-026e6ee31b05",
+			"id": "9aa93dd4-9754-455c-a8ec-c8ed6ac6a788",
 			"name": "13. Favoritos: rechazar duplicado",
 			"url": "http://localhost:3000/api/favoritos",
-			"time": 5,
+			"time": 4,
 			"responseCode": {
 				"code": 409,
 				"name": "Conflict"
@@ -420,7 +684,7 @@
 				}
 			},
 			"times": [
-				5
+				4
 			],
 			"allTests": [
 				{
@@ -430,10 +694,10 @@
 			]
 		},
 		{
-			"id": "a770126c-47c5-41f2-9f52-08ca40eda677",
+			"id": "4b1f9b56-c2b6-4fa9-a440-f1a638ce4c31",
 			"name": "14. Quitar Favorito",
-			"url": "http://localhost:3000/api/favoritos/8",
-			"time": 11,
+			"url": "http://localhost:3000/api/favoritos/13",
+			"time": 8,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -448,7 +712,7 @@
 				}
 			},
 			"times": [
-				11
+				8
 			],
 			"allTests": [
 				{
@@ -457,7 +721,7 @@
 			]
 		},
 		{
-			"id": "9307195f-eb21-4f9f-8bec-df55cff670ae",
+			"id": "7437b8d9-23a2-4608-8932-b90a0c0a88ec",
 			"name": "15. Confirmar Favorito eliminado",
 			"url": "http://localhost:3000/api/favoritos",
 			"time": 5,
@@ -490,10 +754,10 @@
 			]
 		},
 		{
-			"id": "3e4bc62c-f3d4-4e1a-8efc-a4a678588357",
+			"id": "622ca9ba-00af-4c9e-941c-cd037b499f98",
 			"name": "16. Rol turista no puede crear destinos",
 			"url": "http://localhost:3000/api/destinos",
-			"time": 4,
+			"time": 3,
 			"responseCode": {
 				"code": 403,
 				"name": "Forbidden"
@@ -508,7 +772,7 @@
 				}
 			},
 			"times": [
-				4
+				3
 			],
 			"allTests": [
 				{
@@ -517,10 +781,10 @@
 			]
 		},
 		{
-			"id": "622774cd-4391-4cef-b16c-6c81080290a2",
+			"id": "12c8baa4-ff70-4ba6-aa14-0fb5fcc12707",
 			"name": "17. Limpiar turista temporal (admin)",
-			"url": "http://localhost:3000/api/usuarios/3",
-			"time": 5,
+			"url": "http://localhost:3000/api/usuarios/6",
+			"time": 8,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -535,7 +799,7 @@
 				}
 			},
 			"times": [
-				5
+				8
 			],
 			"allTests": [
 				{
@@ -544,10 +808,10 @@
 			]
 		},
 		{
-			"id": "e522b982-ac39-4eae-877f-7d7729b6ace8",
+			"id": "d9d7f6a3-b34e-4459-b422-4820aefac5ac",
 			"name": "18. Limpiar destino temporal (admin)",
-			"url": "http://localhost:3000/api/destinos/5",
-			"time": 6,
+			"url": "http://localhost:3000/api/destinos/7",
+			"time": 4,
 			"responseCode": {
 				"code": 200,
 				"name": "OK"
@@ -562,89 +826,152 @@
 				}
 			},
 			"times": [
-				6
+				4
 			],
 			"allTests": [
 				{
 					"Destino temporal eliminado (200)": true
 				}
 			]
+		},
+		{
+			"id": "2fd4a6a4-3a30-4de2-b4ad-4d9e67ff3d44",
+			"name": "19. Limpiar categoría temporal (admin)",
+			"url": "http://localhost:3000/api/categorias/10",
+			"time": 7,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Categoría temporal eliminada (200)": true
+			},
+			"testPassFailCounts": {
+				"Categoría temporal eliminada (200)": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				7
+			],
+			"allTests": [
+				{
+					"Categoría temporal eliminada (200)": true
+				}
+			]
 		}
 	],
 	"count": 1,
-	"totalTime": 819,
+	"totalTime": 1151,
 	"collection": {
 		"requests": [
 			{
-				"id": "a1a512ee-0863-4189-a6b9-aca5cbccf729",
+				"id": "9a44ed47-6cab-46cb-9957-22ab91b66d49",
 				"method": "GET"
 			},
 			{
-				"id": "833e2208-b280-4b4c-bda7-290cfcb41f19",
+				"id": "08584373-319f-4496-b568-e18610f0db8c",
 				"method": "POST"
 			},
 			{
-				"id": "ac32e3c0-68f9-41de-8ae0-a62e2ab17c67",
+				"id": "72700c84-c730-46f1-9008-2682f7aa1011",
 				"method": "POST"
 			},
 			{
-				"id": "ea4d949c-e164-4b30-972a-455d011e3732",
+				"id": "6d13b797-06c8-4573-a9c8-2865fa9c58bb",
 				"method": "POST"
 			},
 			{
-				"id": "53061dd1-0565-45f3-a02d-0755625e9538",
+				"id": "a7ae2581-dbff-4a96-bd9e-82baa25f8b41",
 				"method": "GET"
 			},
 			{
-				"id": "1e98e667-f9ca-4088-8d7b-8a5c45f1b130",
+				"id": "ea457eb2-d289-4ee6-aff2-436d4cae1c8a",
+				"method": "PATCH"
+			},
+			{
+				"id": "00da58d9-04e8-4525-bf6f-d4b544602c6f",
 				"method": "GET"
 			},
 			{
-				"id": "d77c687f-c878-41d3-80de-f47d38a21bf6",
+				"id": "9193e151-3d71-4c57-ae21-7edac9226083",
 				"method": "GET"
 			},
 			{
-				"id": "a4b02c73-8a0e-49db-a57a-2c4e3d6ec6f1",
+				"id": "997b92fa-d3f3-4f78-9d67-472c3ea86a7e",
+				"method": "GET"
+			},
+			{
+				"id": "c570cf30-d35a-44de-a55f-22d4d0ba7e82",
 				"method": "POST"
 			},
 			{
-				"id": "7e04ecb4-c2b3-4d87-8d6b-db9837e5b2ff",
-				"method": "GET"
+				"id": "a4a0d678-0ad7-4a1f-a030-b6ee815a2f38",
+				"method": "PUT"
 			},
 			{
-				"id": "95ddae73-88b9-4398-bcb9-9441019b2fa3",
-				"method": "GET"
-			},
-			{
-				"id": "cde0cde8-7bdb-4b75-a41d-50f4b045e05d",
+				"id": "956c7c5c-c018-4fb9-9959-3876827f02aa",
 				"method": "POST"
 			},
 			{
-				"id": "b95570eb-0b76-4164-b324-02859227b83e",
-				"method": "GET"
-			},
-			{
-				"id": "59fce10a-4ff3-411c-8fde-026e6ee31b05",
-				"method": "POST"
-			},
-			{
-				"id": "a770126c-47c5-41f2-9f52-08ca40eda677",
+				"id": "319e2c7e-b519-48d7-98f3-0085d3253304",
 				"method": "DELETE"
 			},
 			{
-				"id": "9307195f-eb21-4f9f-8bec-df55cff670ae",
+				"id": "27ac2dc8-534d-4e6c-9edc-1336bd93230c",
 				"method": "GET"
 			},
 			{
-				"id": "3e4bc62c-f3d4-4e1a-8efc-a4a678588357",
+				"id": "a92ae6ed-486c-4ca1-82ba-3c9871d34f3a",
+				"method": "GET"
+			},
+			{
+				"id": "7e07c6d5-9be7-4199-bb9f-cf5a58b64bd3",
+				"method": "GET"
+			},
+			{
+				"id": "a90e1067-9fbf-4121-baba-bc77a16874df",
+				"method": "PUT"
+			},
+			{
+				"id": "5dbe23b0-2a7d-46bf-b523-0e397bd4c27e",
+				"method": "GET"
+			},
+			{
+				"id": "2bc3bab2-d93f-474e-bfa2-50995aa68ac9",
 				"method": "POST"
 			},
 			{
-				"id": "622774cd-4391-4cef-b16c-6c81080290a2",
+				"id": "51f431aa-6f2d-4525-9c66-7f3c88ae7341",
+				"method": "GET"
+			},
+			{
+				"id": "9aa93dd4-9754-455c-a8ec-c8ed6ac6a788",
+				"method": "POST"
+			},
+			{
+				"id": "4b1f9b56-c2b6-4fa9-a440-f1a638ce4c31",
 				"method": "DELETE"
 			},
 			{
-				"id": "e522b982-ac39-4eae-877f-7d7729b6ace8",
+				"id": "7437b8d9-23a2-4608-8932-b90a0c0a88ec",
+				"method": "GET"
+			},
+			{
+				"id": "622ca9ba-00af-4c9e-941c-cd037b499f98",
+				"method": "POST"
+			},
+			{
+				"id": "12c8baa4-ff70-4ba6-aa14-0fb5fcc12707",
+				"method": "DELETE"
+			},
+			{
+				"id": "d9d7f6a3-b34e-4459-b422-4820aefac5ac",
+				"method": "DELETE"
+			},
+			{
+				"id": "2fd4a6a4-3a30-4de2-b4ad-4d9e67ff3d44",
 				"method": "DELETE"
 			}
 		]

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { registerSchema, destinoSchema, createAdminSchema } from '../dist/validators/schemas.js';
+import { registerSchema, destinoSchema, createAdminSchema, idParamSchema } from '../dist/validators/schemas.js';
 
 test('rechaza registro con email inválido y contraseña corta', () => {
   assert.equal(registerSchema.safeParse({ nombre: 'Ana', email: 'correo', password: '123' }).success, false);
@@ -14,6 +14,12 @@ test('valida rangos de coordenadas y relaciones numéricas de destino', () => {
   const destino = { nombre: 'Parque', categoria_id: 1, region_id: 2, latitud: -91, longitud: -70 };
   assert.equal(destinoSchema.safeParse(destino).success, false);
   assert.equal(destinoSchema.safeParse({ ...destino, latitud: -33 }).success, true);
+});
+
+test('acepta solo IDs de ruta enteros y positivos', () => {
+  assert.equal(idParamSchema.safeParse('12').success, true);
+  assert.equal(idParamSchema.safeParse('0').success, false);
+  assert.equal(idParamSchema.safeParse('no-es-id').success, false);
 });
 
 test('exige contraseña robusta para crear la cuenta administrativa', () => {

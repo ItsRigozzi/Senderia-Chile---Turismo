@@ -1,6 +1,6 @@
 # Senderia Chile — Backend
 
-API REST construida con Node.js, Express, TypeScript y PostgreSQL. Esta carpeta contiene el servidor, sus rutas/controladores, el esquema SQL, los datos iniciales y la colección Postman.
+API REST construida con Node.js, Express, TypeScript y PostgreSQL. Esta carpeta contiene el servidor, las rutas, los controladores, los servicios de acceso a datos, el esquema SQL, los datos iniciales y la colección Postman.
 
 ## Requisitos
 
@@ -10,7 +10,13 @@ API REST construida con Node.js, Express, TypeScript y PostgreSQL. Esta carpeta 
 
 ## Configurar base de datos
 
-1. Si aún no existe, copia `.env.example` como `.env` y completa `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` y `DB_SSL`. Define un `JWT_SECRET` aleatorio de al menos 32 caracteres. No sobrescribas un `.env` ya configurado ni lo compartas.
+1. Si aún no existe, copia `.env.example` como `.env` y completa `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` y `DB_SSL`. El valor de ejemplo de `JWT_SECRET` es intencionalmente inválido: cámbialo por uno aleatorio de al menos 32 caracteres. Puedes generarlo desde PowerShell con:
+
+   ```powershell
+   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+   ```
+
+   Copia el resultado en `JWT_SECRET`. El servidor se detiene si el secreto sigue vacío o conserva el texto de ejemplo. No sobrescribas un `.env` ya configurado ni lo compartas.
 2. El script puede crear la base nombrada en `DB_NAME` si no existe. También puedes crearla manualmente en pgAdmin: **Databases → Create → Database…**, con el mismo nombre y servidor/puerto configurados en `.env`.
 3. Desde la raíz del repositorio, inicializa las tablas y los datos:
 
@@ -58,4 +64,4 @@ npm.cmd run test:api
 
 Usa las credenciales de un administrador que ya exista en tu base local. No guardes ni compartas la contraseña. La colección Postman está en `backend/postman/Senderia-EP2.postman_collection.json`; la evidencia está en `backend/postman/evidencia/`.
 
-La guía completa de ejecución, endpoints, roles, respuestas y pruebas está en el [README principal del proyecto](../README.md).
+La guía completa de ejecución, endpoints, roles, cuerpos, respuestas y pruebas está en el [README principal del proyecto](../README.md). La colección Postman actual contiene solicitudes temporales de CRUD para usuarios, categorías, destinos y favoritos; ejecuta la versión actualizada y guarda evidencia nueva antes de entregar.

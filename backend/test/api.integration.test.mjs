@@ -24,6 +24,7 @@ test('integra PostgreSQL, autenticación, roles, CRUD y favoritos', { skip: !cre
 
   const health = await request('/health', { expected: 200 });
   assert.equal(health.data.database, 'connected', 'health debe comprobar PostgreSQL real');
+  await request('/destinos/no-es-id', { expected: 400 });
 
   const adminLogin = await request('/auth/login', {
     method: 'POST', body: { email: adminEmail, password: adminPassword }, expected: 200,
@@ -80,6 +81,7 @@ test('integra PostgreSQL, autenticación, roles, CRUD y favoritos', { skip: !cre
       expected: 201,
     });
     destinationId = createdDestination.data.destino.id;
+    await request(`/destinos/${destinationId}`, { method: 'PUT', token: adminToken, body: {}, expected: 400 });
     const readDestination = await request(`/destinos/${destinationId}`, { expected: 200 });
     assert.equal(readDestination.data.source, 'database');
     const list = await request('/destinos', { expected: 200 });
