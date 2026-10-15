@@ -140,9 +140,14 @@ Todas las respuestas usan JSON. Las operaciones administrativas requieren `Autho
 | DELETE | `/api/destinos/:id` | Admin | Eliminar destino |
 | GET | `/api/categorias` | Público | Listar categorías |
 | GET | `/api/categorias/regiones` | Público | Listar regiones |
-| POST/PUT/DELETE | `/api/categorias[/<id>]` | Admin | CRUD de categorías |
-| GET/PATCH/DELETE | `/api/usuarios[/<id>]` | Admin | Listar, actualizar rol/nombre y eliminar usuario |
-| GET/POST | `/api/favoritos` | JWT | Listar/agregar favoritos propios |
+| POST | `/api/categorias` | Admin | Crear categoría |
+| PUT | `/api/categorias/:id` | Admin | Actualizar campos de una categoría |
+| DELETE | `/api/categorias/:id` | Admin | Eliminar categoría sin destinos asociados |
+| GET | `/api/usuarios` | Admin | Listar usuarios sin exponer hashes |
+| PATCH | `/api/usuarios/:id` | Admin | Actualizar nombre o rol |
+| DELETE | `/api/usuarios/:id` | Admin | Eliminar usuario (no permite borrar la propia cuenta) |
+| GET | `/api/favoritos` | JWT | Listar favoritos del usuario autenticado |
+| POST | `/api/favoritos` | JWT | Agregar favorito propio |
 | DELETE | `/api/favoritos/:id` | JWT | Quitar favorito propio |
 
 Validación de entradas con Zod, SQL parametrizado, claves con bcrypt y autorización aplicada también en la API. Si PostgreSQL no está disponible, las rutas persistentes responden `503`; no sustituyen datos reales por datos de muestra.
@@ -181,7 +186,13 @@ Respuesta esperada: `201 Created`, con `mensaje`, `usuario` (`id`, `nombre`, `em
 
 Responde `201 Created` con `mensaje` y el objeto `destino`. Una entrada inválida responde `400`, una solicitud sin sesión `401` y una cuenta sin rol admin `403`. La actualización `PUT /api/destinos/:id` acepta campos parciales, responde `200` y devuelve `404` si no existe el destino.
 
-**Favoritos — rutas que requieren JWT:** `GET /api/favoritos` responde `200` con `{ "favoritos": [...] }`. Para agregar, `POST /api/favoritos` recibe `{ "destino_id": 1 }` y responde `201` con `mensaje` y `favorito`; un ID inválido responde `400`, un destino inexistente `404` y un favorito duplicado `409`. `DELETE /api/favoritos/:id` responde `200`; si ese favorito no existe o no pertenece al usuario, responde `404`. Sin JWT, las rutas protegidas responden `401`.
+**Favoritos — rutas que requieren JWT:** `GET /api/favoritos` responde `200` con `{ "favoritos": [...] }`. Para agregar, `POST /api/favoritos` recibe `{ "destino_id": 1 }` y responde `201` con `mensaje` y `favorito`; un ID inválido responde `400`, un destino inexistente `404` y un favorito duplicado `409`. `DELETE /api/favoritos/:id` responde `200`; un ID mal formado responde `400` y si ese favorito no existe o no pertenece al usuario responde `404`. Sin JWT, las rutas protegidas responden `401`.
+
+**Categorías y regiones:** `GET /api/categorias` responde `200` con `{ "categorias": [...] }`; `GET /api/categorias/regiones` responde `200` con `{ "regiones": [...] }`. Un administrador puede crear con `POST /api/categorias` (`201`), editar con `PUT /api/categorias/:id` (`200`) y eliminar con `DELETE /api/categorias/:id` (`200`). Las entradas inválidas responden `400`, nombres o slugs repetidos `409`, categorías con destinos asociados `409`, recursos inexistentes `404`, falta de sesión `401` y rol insuficiente `403`.
+
+**Usuarios — solo admin:** `GET /api/usuarios` devuelve `{ "usuarios": [...] }` sin hashes de contraseña; `PATCH /api/usuarios/:id` acepta `nombre` o `rol`; `DELETE /api/usuarios/:id` elimina una cuenta. Las actualizaciones responden `200`, entradas inválidas `400` y usuarios inexistentes `404`. No se permite que un administrador elimine su propia cuenta (`400`). Para estas rutas se espera `401` sin JWT y `403` con un JWT de turista.
+
+**Formato de errores:** los errores de validación responden `{ "error": "Datos inválidos", "detalles": { ... } }`. Los demás errores responden `{ "error": "..." }`; las respuestas de éxito contienen el recurso bajo su nombre (`destino`, `categoria`, `usuario` o `favoritos`) y, cuando corresponde, un campo `mensaje`.
 
 ## Pruebas reproducibles
 
@@ -202,8 +213,8 @@ Usa las credenciales locales de un administrador existente. La prueba crea un tu
 
 1. En Postman Desktop, importa `backend/postman/Senderia-EP2.postman_collection.json` desde **Import** o arrastrando el archivo a Postman.
 2. Crea y selecciona un Environment local con `adminEmail`, `adminPassword` y `turistaPassword`. El primer par corresponde a un admin ya creado en la base local; `turistaPassword` es una clave temporal de al menos 6 caracteres. La colección genera automáticamente un correo nuevo para el turista de prueba, así que no ingreses `turistaEmail`.
-3. Ejecuta la colección completa en orden, con una iteración. Crea un turista y un destino temporales, prueba autenticación, permisos y Favoritos, y al final los elimina. Varias pruebas esperan errores `401`, `403` o `409`; se consideran aprobadas cuando la API rechaza correctamente esas operaciones.
-4. Guarda la captura del resumen y el reporte de ejecución en `backend/postman/evidencia/`. Antes de compartir el reporte JSON, comprueba que no incluya contraseñas ni tokens.
+3. Ejecuta la colección completa en orden, con una iteración. Crea un turista, una categoría y un destino temporales; prueba autenticación, roles y CRUD; luego elimina los datos de prueba. Varias solicitudes esperan errores `400`, `401`, `403` o `409`; se consideran aprobadas cuando la API rechaza correctamente esas operaciones.
+4. Después de ejecutar la versión actual de la colección, guarda la nueva captura y el nuevo reporte en `backend/postman/evidencia/`. Los archivos que ya estaban guardados corresponden a una ejecución anterior de la colección; reemplázalos solo después de confirmar que el nuevo resumen muestra cero fallos. Antes de compartir el reporte JSON, comprueba que no incluya contraseñas ni tokens.
 
 ### Pruebas de interfaz con Cypress
 
@@ -221,7 +232,7 @@ cd .\frontend
 npm.cmd run test.e2e
 ```
 
-Las pruebas Cypress comprueban explorar/abrir un destino e iniciar sesión/consultar Favoritos. Pasan cuando el resumen muestra `2 passing` y `0 failing`.
+Las pruebas Cypress comprueban explorar/abrir un destino y el flujo de intentar guardarlo como favorito, iniciar sesión, volver a ese destino, guardarlo y consultarlo en Favoritos. Pasan cuando el resumen muestra `2 passing` y `0 failing`.
 
 ### Otras verificaciones
 
@@ -255,11 +266,11 @@ El reporte JSON de Postman está en la misma carpeta de evidencia; revísalo y e
 
 ## Guía de implementación por rúbrica EP2
 
-- **EP 2.1:** `backend/src/index.ts`, `backend/src/routes/` y `backend/src/controllers/`.
+- **EP 2.1:** `backend/src/index.ts`, `backend/src/routes/`, `backend/src/controllers/`, `backend/src/services/` y `backend/src/config/`.
 - **EP 2.2:** modelo reproducible `backend/src/db/init.sql`; datos de muestra `backend/src/db/seed.sql`.
 - **EP 2.3:** CRUD REST de destinos/categorías y operaciones de usuarios/favoritos descritas arriba.
 - **EP 2.4:** `backend/src/middleware/auth.ts`, `backend/src/middleware/roleGuard.ts`, `frontend/src/context/AuthContext.tsx`.
-- **EP 2.5:** bcrypt, secreto JWT obligatorio, Zod, consultas parametrizadas y autorización por rol.
+- **EP 2.5:** bcrypt, secreto JWT aleatorio obligatorio, Zod, consultas parametrizadas, límites de coordenadas también en PostgreSQL y autorización por rol.
 - **EP 2.6:** cliente en `frontend/src/services/api.ts`; vistas Ionic conectadas; panel admin CRUD real en `frontend/src/pages/AdminDashboard.tsx`.
 - **EP 2.7:** colección Postman con casos funcionales y de error, autenticación, cuerpos de solicitudes y comprobaciones; capturas de ejecución en `backend/postman/evidencia/`.
 - **Documentación/gestión:** guía de puesta en marcha y ramas listadas abajo.
