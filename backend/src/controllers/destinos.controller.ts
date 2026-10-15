@@ -1,37 +1,14 @@
 import { Request, Response } from 'express';
-import pool from '../config/db.js';
-import { destinoSchema, destinoUpdateSchema } from '../validators/schemas.js';
+import { destinoSchema, destinoUpdateSchema, idParamSchema } from '../validators/schemas.js';
+import * as destinosService from '../services/destinos.service.js';
+import { hasPostgresCode } from './databaseErrors.js';
 
 export const getDestinos = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { categoria, region } = req.query;
-    let query = `
-      SELECT d.*, c.nombre as categoria_nombre, c.slug as categoria_slug, 
-             r.nombre as region_nombre, r.slug as region_slug
-      FROM destinos d
-      JOIN categorias c ON d.categoria_id = c.id
-      JOIN regiones r ON d.region_id = r.id
-    `;
-    const conditions: string[] = [];
-    const params: (string | number)[] = [];
-
-    if (categoria) {
-      params.push(String(categoria));
-      conditions.push(`c.slug = $${params.length}`);
-    }
-    if (region) {
-      params.push(String(region));
-      conditions.push(`r.slug = $${params.length}`);
-    }
-
-    if (conditions.length > 0) {
-      query += ' WHERE ' + conditions.join(' AND ');
-    }
-
-    query += ' ORDER BY d.nombre ASC';
-
-    const result = await pool.query(query, params);
-    res.json({ destinos: result.rows, source: 'database' });
+    const categoria = typeof req.query.categoria === 'string' ? req.query.categoria : undefined;
+    const region = typeof req.query.region === 'string' ? req.query.region : undefined;
+    const destinos = await destinosService.listDestinos(categoria, region);
+    res.json({ destinos, source: 'database' });
   } catch (err) {
     console.error('Error al obtener destinos:', err instanceof Error ? err.message : err);
     res.status(503).json({ error: 'No se pudo consultar PostgreSQL' });
@@ -40,22 +17,22 @@ export const getDestinos = async (req: Request, res: Response): Promise<void> =>
 
 export const getDestinoById = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
-    const result = await pool.query(
-        `SELECT d.*, c.nombre as categoria_nombre, c.slug as categoria_slug,
-                r.nombre as region_nombre, r.slug as region_slug
-         FROM destinos d
-         JOIN categorias c ON d.categoria_id = c.id
-         JOIN regiones r ON d.region_id = r.id
-         WHERE d.id = $1`,
-        [id]
-      );
-    if (result.rows.length > 0) {
-      res.json({ destino: result.rows[0], source: 'database' });
+    const parsedId = idParamSchema.safeParse(req.params.id);
+    if (!parsedId.success) {
+      res.status(400).json({ error: 'El ID del destino debe ser un entero positivo' });
+      return;
+    }
+    const destino = await destinosService.findDestinoById(parsedId.data);
+    if (destino) {
+      res.json({ destino, source: 'database' });
       return;
     }
     res.status(404).json({ error: 'Destino no encontrado' });
   } catch (err) {
+    if (hasPostgresCode(err, '22P02')) {
+      res.status(400).json({ error: 'El ID del destino no es válido' });
+      return;
+    }
     console.error('Error al obtener destino:', err);
     res.status(503).json({ error: 'No se pudo consultar PostgreSQL' });
   }
@@ -69,18 +46,17 @@ export const createDestino = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const { nombre, descripcion, categoria_id, region_id, latitud, longitud, horario, condiciones_acceso, imagen_url } = parsed.data;
-
-    const result = await pool.query(
-      `INSERT INTO destinos (nombre, descripcion, categoria_id, region_id, latitud, longitud, horario, condiciones_acceso, imagen_url)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-       RETURNING *`,
-      [nombre, descripcion || null, categoria_id, region_id, latitud, longitud, horario || null, condiciones_acceso || null, imagen_url || null]
-    );
-
-    res.status(201).json({ mensaje: 'Destino creado exitosamente', destino: result.rows[0] });
+    const destino = await destinosService.createDestino(parsed.data);
+    res.status(201).json({ mensaje: 'Destino creado exitosamente', destino });
   } catch (err) {
-    console.error('Error al crear destino:', err);
+    if (hasPostgresCode(err, '23505')) {
+      res.status(409).json({ error: 'Ya existe un destino con ese nombre en la región seleccionada' });
+      return;
+    }
+    if (hasPostgresCode(err, '23503')) {
+      res.status(400).json({ error: 'La categoría o región indicada no existe' });
+      return;
+    }
     console.error('Error al crear destino:', err instanceof Error ? err.message : err);
     res.status(503).json({ error: 'No se pudo escribir en PostgreSQL' });
   }
@@ -88,38 +64,36 @@ export const createDestino = async (req: Request, res: Response): Promise<void> 
 
 export const updateDestino = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const parsedId = idParamSchema.safeParse(req.params.id);
+    if (!parsedId.success) {
+      res.status(400).json({ error: 'El ID del destino debe ser un entero positivo' });
+      return;
+    }
     const parsed = destinoUpdateSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: 'Datos inválidos', detalles: parsed.error.flatten().fieldErrors });
       return;
     }
 
-    const fields = parsed.data;
-    const keys = Object.keys(fields) as (keyof typeof fields)[];
-    if (keys.length === 0) {
+    if (Object.keys(parsed.data).length === 0) {
       res.status(400).json({ error: 'No se proporcionaron campos para actualizar' });
       return;
     }
-
-    const setClauses = keys.map((key, i) => `${key} = $${i + 1}`);
-    setClauses.push(`updated_at = CURRENT_TIMESTAMP`);
-    const values = keys.map((key) => fields[key]);
-    values.push(id as any);
-
-    const result = await pool.query(
-      `UPDATE destinos SET ${setClauses.join(', ')} WHERE id = $${values.length} RETURNING *`,
-      values
-    );
-
-    if (result.rows.length === 0) {
+    const destino = await destinosService.updateDestino(parsedId.data, parsed.data);
+    if (!destino) {
       res.status(404).json({ error: 'Destino no encontrado' });
       return;
     }
-
-    res.json({ mensaje: 'Destino actualizado exitosamente', destino: result.rows[0] });
+    res.json({ mensaje: 'Destino actualizado exitosamente', destino });
   } catch (err) {
-    console.error('Error al actualizar destino:', err);
+    if (hasPostgresCode(err, '23505')) {
+      res.status(409).json({ error: 'Ya existe un destino con ese nombre en la región seleccionada' });
+      return;
+    }
+    if (hasPostgresCode(err, '23503')) {
+      res.status(400).json({ error: 'La categoría o región indicada no existe' });
+      return;
+    }
     console.error('Error al actualizar destino:', err instanceof Error ? err.message : err);
     res.status(503).json({ error: 'No se pudo escribir en PostgreSQL' });
   }
@@ -127,17 +101,18 @@ export const updateDestino = async (req: Request, res: Response): Promise<void> 
 
 export const deleteDestino = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
-    const result = await pool.query('DELETE FROM destinos WHERE id = $1 RETURNING id, nombre', [id]);
-
-    if (result.rows.length === 0) {
+    const parsedId = idParamSchema.safeParse(req.params.id);
+    if (!parsedId.success) {
+      res.status(400).json({ error: 'El ID del destino debe ser un entero positivo' });
+      return;
+    }
+    const destino = await destinosService.deleteDestino(parsedId.data);
+    if (!destino) {
       res.status(404).json({ error: 'Destino no encontrado' });
       return;
     }
-
-    res.json({ mensaje: 'Destino eliminado exitosamente', destino: result.rows[0] });
+    res.json({ mensaje: 'Destino eliminado exitosamente', destino });
   } catch (err) {
-    console.error('Error al eliminar destino:', err);
     console.error('Error al eliminar destino:', err instanceof Error ? err.message : err);
     res.status(503).json({ error: 'No se pudo escribir en PostgreSQL' });
   }

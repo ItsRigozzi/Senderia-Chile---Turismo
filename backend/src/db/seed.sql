@@ -82,5 +82,41 @@ INSERT INTO destinos (nombre, descripcion, categoria_id, region_id, latitud, lon
     SET imagen_url = EXCLUDED.imagen_url,
         updated_at = CURRENT_TIMESTAMP;
 
+-- Cerro Provincia: coordenadas compartidas desde Google Maps (Las Condes, Región Metropolitana).
+-- Cerro El Plomo: https://www.andeshandbook.org/details/hill/18
+INSERT INTO destinos (nombre, descripcion, categoria_id, region_id, latitud, longitud, horario, condiciones_acceso, imagen_url) VALUES
+  (
+    'Cerro Provincia',
+    'Cerro precordillerano de la Sierra de Ramón, en la Región Metropolitana. Cuenta con rutas de ascenso desde sectores como Puente Ñilhue y San Carlos de Apoquindo.',
+    (SELECT id FROM categorias WHERE slug = 'montana'),
+    (SELECT id FROM regiones WHERE slug = 'metropolitana'),
+    -33.4261313041981, -70.43477717652341,
+    NULL,
+    'Ruta de montaña. Confirma acceso, horarios, entradas y condiciones del sendero con el administrador antes de realizar la excursión.',
+    '/images/destinos/cerro-provincia.jpg'
+  ) ON CONFLICT (nombre, region_id) DO UPDATE
+    SET descripcion = EXCLUDED.descripcion,
+        categoria_id = EXCLUDED.categoria_id,
+        latitud = EXCLUDED.latitud,
+        longitud = EXCLUDED.longitud,
+        horario = EXCLUDED.horario,
+        condiciones_acceso = EXCLUDED.condiciones_acceso,
+        imagen_url = EXCLUDED.imagen_url,
+        updated_at = CURRENT_TIMESTAMP;
+
+INSERT INTO destinos (nombre, descripcion, categoria_id, region_id, latitud, longitud, horario, condiciones_acceso, imagen_url) VALUES
+  (
+    'Cerro El Plomo',
+    'Cumbre de alta montaña de la Región Metropolitana, visible desde Santiago. Es una excursión exigente que requiere experiencia, planificación y evaluación de las condiciones del terreno.',
+    (SELECT id FROM categorias WHERE slug = 'montana'),
+    (SELECT id FROM regiones WHERE slug = 'metropolitana'),
+    -33.23544525212245, -70.21439958308547,
+    NULL,
+    'Ascenso de alta montaña. Verifica rutas, clima, accesos y requisitos vigentes antes de salir; no es una caminata urbana ni una ruta para principiantes.',
+    '/images/destinos/cerro-el-plomo.jpg'
+  ) ON CONFLICT (nombre, region_id) DO UPDATE
+    SET imagen_url = EXCLUDED.imagen_url,
+        updated_at = CURRENT_TIMESTAMP;
+
 -- Por seguridad, el seed no crea administradores con contraseñas conocidas.
 -- Cree el primer administrador mediante el comando documentado en README.md.

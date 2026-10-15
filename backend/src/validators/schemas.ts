@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+export const idParamSchema = z.coerce.number().int().positive().max(2147483647);
+const foreignKeyIdSchema = z.number().int().positive().max(2147483647);
+
 // ---- Auth ----
 export const registerSchema = z.object({
   nombre: z.string().min(2, 'El nombre debe tener al menos 2 caracteres').max(150),
@@ -22,8 +25,8 @@ export const createAdminSchema = z.object({
 export const destinoSchema = z.object({
   nombre: z.string().min(2).max(255),
   descripcion: z.string().optional(),
-  categoria_id: z.number().int().positive(),
-  region_id: z.number().int().positive(),
+  categoria_id: foreignKeyIdSchema,
+  region_id: foreignKeyIdSchema,
   latitud: z.number().min(-90).max(90),
   longitud: z.number().min(-180).max(180),
   horario: z.string().max(255).optional(),

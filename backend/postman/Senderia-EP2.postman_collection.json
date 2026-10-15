@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Senderia Chile - EP2 API",
-    "description": "Colección de integración local para PostgreSQL, JWT, permisos, CRUD y Favoritos. Importa y ejecuta en orden con PostgreSQL, el backend y un usuario administrador ya creado. Antes, selecciona un Environment local con adminEmail, adminPassword y turistaPassword. Las solicitudes crean un turista y un destino temporales con nombres únicos y los eliminan al final; si la ejecución se interrumpe, revisa y elimina esos datos de prueba manualmente. No compartas ni exportes el Environment con contraseñas o tokens. Respuestas esperadas: 200/201 en operaciones exitosas; 400 para datos inválidos; 401 sin autenticación; 403 para rol insuficiente; 404 para recursos inexistentes; 409 para email o favorito duplicado.",
+    "description": "Colección de integración local para PostgreSQL, JWT, permisos, CRUD y Favoritos. Importa y ejecuta en orden con PostgreSQL, el backend y un usuario administrador ya creado. Antes, selecciona un Environment local con adminEmail, adminPassword y turistaPassword. Las solicitudes crean un turista, una categoría y un destino temporales con nombres únicos y los eliminan al final; si la ejecución se interrumpe, revisa y elimina esos datos de prueba manualmente. No compartas ni exportes el Environment con contraseñas o tokens. Respuestas esperadas: 200/201 en operaciones exitosas; 400 para datos inválidos; 401 sin autenticación; 403 para rol insuficiente; 404 para recursos inexistentes; 409 para conflictos de duplicado o relaciones.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -29,6 +29,16 @@
       "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const body = pm.response.json();", "pm.test('Login turista exitoso (200)', () => pm.response.to.have.status(200));", "pm.test('La cuenta tiene rol turista y token', () => { pm.expect(body.usuario.rol).to.eql('turista'); pm.expect(body.token).to.be.a('string').and.not.empty; });", "if (pm.response.code === 200) pm.environment.set('turistaToken', body.token);"] } }]
     },
     {
+      "name": "4A. Listar usuarios sin hashes (admin)",
+      "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/usuarios", "description": "Lista usuarios como admin y comprueba que la respuesta no expone password_hash. Espera HTTP 200." },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const rows = pm.response.json().usuarios;", "pm.test('Usuarios listados (200)', () => pm.response.to.have.status(200));", "pm.test('No se exponen hashes de contraseña', () => pm.expect(rows.every((row) => !('password_hash' in row))).to.eql(true));", "pm.test('Incluye al turista temporal', () => pm.expect(rows.some((row) => row.id === Number(pm.environment.get('usuarioId')))).to.eql(true));"] } }]
+    },
+    {
+      "name": "4B. Actualizar turista temporal (admin)",
+      "request": { "method": "PATCH", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Turista actualizado Postman\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/usuarios/{{usuarioId}}", "description": "Actualiza el nombre de la cuenta temporal. Espera HTTP 200 y el nuevo nombre." },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const body = pm.response.json();", "pm.test('Usuario actualizado (200)', () => pm.response.to.have.status(200));", "pm.test('La respuesta confirma el cambio', () => pm.expect(body.usuario.nombre).to.eql('Turista actualizado Postman'));"] } }]
+    },
+    {
       "name": "5. Usuario actual (JWT admin)",
       "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/auth/me", "description": "Comprueba que el JWT admin identifica una cuenta existente. Espera HTTP 200." },
       "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('JWT identifica al usuario (200)', () => pm.response.to.have.status(200));"] } }]
@@ -44,14 +54,44 @@
       "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const rows = pm.response.json().regiones;", "pm.test('Lista regiones (200)', () => pm.response.to.have.status(200));", "pm.test('Hay regiones iniciales', () => pm.expect(rows).to.be.an('array').that.is.not.empty);", "if (rows?.length) pm.environment.set('regionId', rows[0].id);"] } }]
     },
     {
+      "name": "7A. Crear categoría temporal (admin)",
+      "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["const suffix = pm.variables.replaceIn('{{$guid}}').replace(/-/g, '').slice(0, 12);", "pm.environment.set('categoriaTemporalNombre', `Categoría Postman ${suffix}`);", "pm.environment.set('categoriaTemporalSlug', `postman-${suffix}`);"] } }, { "listen": "test", "script": { "type": "text/javascript", "exec": ["const body = pm.response.json();", "pm.test('Categoría creada (201)', () => pm.response.to.have.status(201));", "pm.test('La respuesta incluye la categoría', () => pm.expect(body.categoria.id).to.be.a('number'));", "if (pm.response.code === 201) pm.environment.set('categoriaTemporalId', body.categoria.id);"] } }],
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"{{categoriaTemporalNombre}}\",\n  \"slug\": \"{{categoriaTemporalSlug}}\",\n  \"descripcion\": \"Categoría creada por una prueba temporal\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/categorias", "description": "Crea una categoría temporal como admin para comprobar el CRUD. Espera HTTP 201." }
+    },
+    {
+      "name": "7B. Actualizar categoría temporal (admin)",
+      "request": { "method": "PUT", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"descripcion\": \"Categoría actualizada por Postman\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/categorias/{{categoriaTemporalId}}", "description": "Actualiza la descripción de la categoría temporal. Espera HTTP 200." },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const body = pm.response.json();", "pm.test('Categoría actualizada (200)', () => pm.response.to.have.status(200));", "pm.test('La respuesta refleja la descripción', () => pm.expect(body.categoria.descripcion).to.eql('Categoría actualizada por Postman'));"] } }]
+    },
+    {
       "name": "8. Crear destino temporal (admin)",
       "event": [{ "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["pm.environment.set('destinoNombre', `Destino Postman ${pm.variables.replaceIn('{{$guid}}')}`);"] } }, { "listen": "test", "script": { "type": "text/javascript", "exec": ["const body = pm.response.json();", "pm.test('Destino creado y persistido (201)', () => pm.response.to.have.status(201));", "pm.test('La respuesta incluye el destino creado', () => pm.expect(body.destino.id).to.be.a('number'));", "if (pm.response.code === 201) pm.environment.set('destinoId', body.destino.id);"] } }],
-      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"{{destinoNombre}}\",\n  \"descripcion\": \"Destino temporal para probar la API de Senderia\",\n  \"categoria_id\": {{categoriaId}},\n  \"region_id\": {{regionId}},\n  \"latitud\": -33.45,\n  \"longitud\": -70.66,\n  \"horario\": \"Acceso libre\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/destinos", "description": "Crea un destino temporal con una categoría y región del seed. Espera HTTP 201. Requiere JWT admin." }
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"{{destinoNombre}}\",\n  \"descripcion\": \"Destino temporal para probar la API de Senderia\",\n  \"categoria_id\": {{categoriaTemporalId}},\n  \"region_id\": {{regionId}},\n  \"latitud\": -33.45,\n  \"longitud\": -70.66,\n  \"horario\": \"Acceso libre\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/destinos", "description": "Crea un destino temporal asociado a la categoría temporal. Espera HTTP 201. Requiere JWT admin." }
+    },
+    {
+      "name": "8A. Rechazar eliminación de categoría asociada",
+      "request": { "method": "DELETE", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/categorias/{{categoriaTemporalId}}", "description": "Intenta eliminar la categoría temporal que ya tiene el destino temporal asociado. Espera HTTP 409." },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Categoría asociada protegida (409)', () => pm.response.to.have.status(409));"] } }]
     },
     {
       "name": "9. Leer destinos (persistencia PostgreSQL)",
       "request": { "method": "GET", "url": "{{baseUrl}}/destinos", "description": "Comprueba que el catálogo se consulta desde PostgreSQL. Espera HTTP 200 y source=database." },
       "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const body = pm.response.json();", "pm.test('Consulta catálogo (200)', () => pm.response.to.have.status(200));", "pm.test('La API informa origen database', () => pm.expect(body.source).to.eql('database'));", "pm.test('Incluye el destino temporal', () => pm.expect(body.destinos.some((item) => item.id === Number(pm.environment.get('destinoId')))).to.eql(true));"] } }]
+    },
+    {
+      "name": "9A. Leer destino temporal por ID",
+      "request": { "method": "GET", "url": "{{baseUrl}}/destinos/{{destinoId}}", "description": "Consulta un destino específico guardado en PostgreSQL. Espera HTTP 200 y source=database." },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const body = pm.response.json();", "pm.test('Detalle de destino (200)', () => pm.response.to.have.status(200));", "pm.test('El detalle corresponde al destino creado', () => pm.expect(body.destino.id).to.eql(Number(pm.environment.get('destinoId'))));", "pm.test('El origen es la base de datos', () => pm.expect(body.source).to.eql('database'));"] } }]
+    },
+    {
+      "name": "9B. Rechazar ID de destino inválido",
+      "request": { "method": "GET", "url": "{{baseUrl}}/destinos/no-es-id", "description": "Comprueba validación de parámetros de ruta. Espera HTTP 400." },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('ID no numérico rechazado (400)', () => pm.response.to.have.status(400));"] } }]
+    },
+    {
+      "name": "9C. Actualizar destino temporal (admin)",
+      "request": { "method": "PUT", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"descripcion\": \"Destino actualizado por Postman\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/destinos/{{destinoId}}", "description": "Actualiza un campo del destino temporal. Espera HTTP 200 y el valor guardado." },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const body = pm.response.json();", "pm.test('Destino actualizado (200)', () => pm.response.to.have.status(200));", "pm.test('La respuesta confirma el cambio', () => pm.expect(body.destino.descripcion).to.eql('Destino actualizado por Postman'));"] } }]
     },
     {
       "name": "10. Favoritos: listar sin autenticación",
@@ -97,6 +137,11 @@
       "name": "18. Limpiar destino temporal (admin)",
       "request": { "method": "DELETE", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/destinos/{{destinoId}}", "description": "Elimina el destino temporal creado por esta ejecución. Espera HTTP 200." },
       "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Destino temporal eliminado (200)', () => pm.response.to.have.status(200));"] } }]
+    },
+    {
+      "name": "19. Limpiar categoría temporal (admin)",
+      "request": { "method": "DELETE", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }], "url": "{{baseUrl}}/categorias/{{categoriaTemporalId}}", "description": "Elimina la categoría temporal creada al inicio. Debe ejecutarse después de limpiar el destino. Espera HTTP 200." },
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Categoría temporal eliminada (200)', () => pm.response.to.have.status(200));"] } }]
     }
   ]
 }

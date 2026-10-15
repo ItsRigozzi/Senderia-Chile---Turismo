@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import pool from '../config/db.js';
 import { registerSchema, loginSchema } from '../validators/schemas.js';
+import { createTouristAccount, findAccountByEmail, findSessionUser } from '../services/auth.service.js';
 
 const SALT_ROUNDS = 10;
 
@@ -30,12 +30,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     const tokenSecret = getJwtSecret();
 
     try {
-      const result = await pool.query(
-        'INSERT INTO usuarios (nombre, email, password_hash, rol) VALUES ($1, $2, $3, $4) RETURNING id, nombre, email, rol, created_at',
-        [nombre, email, passwordHash, 'turista']
-      );
-
-      const user = result.rows[0];
+      const user = await createTouristAccount(nombre, email, passwordHash);
       const token = jwt.sign(
         { userId: user.id, email: user.email, rol: user.rol },
         tokenSecret,
@@ -75,13 +70,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     try {
       // Intento en PostgreSQL
-      const result = await pool.query(
-        'SELECT id, nombre, email, password_hash, rol FROM usuarios WHERE email = $1',
-        [email]
-      );
+      const user = await findAccountByEmail(email);
 
-      if (result.rows.length > 0) {
-        const user = result.rows[0];
+      if (user) {
         const passwordMatch = await bcrypt.compare(password, user.password_hash);
 
         if (!passwordMatch) {
@@ -115,15 +106,12 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
 export const me = async (req: Request, res: Response): Promise<void> => {
   try {
-    const result = await pool.query(
-      'SELECT id, nombre, email, rol, created_at FROM usuarios WHERE id = $1',
-      [req.user!.userId]
-    );
-    if (result.rows.length === 0) {
+    const user = await findSessionUser(req.user!.userId);
+    if (!user) {
       res.status(404).json({ error: 'Usuario no encontrado' });
       return;
     }
-    res.json({ usuario: result.rows[0] });
+    res.json({ usuario: user });
   } catch (error) {
     databaseUnavailable(res, error);
   }
