@@ -12,6 +12,7 @@ interface Destino {
   categoria_nombre: string;
   region_nombre: string;
   imagen_url: string | null;
+  condiciones_acceso?: string | null;
 }
 
 const Explorar: React.FC = () => {
@@ -41,14 +42,25 @@ const Explorar: React.FC = () => {
   const [busqueda, setBusqueda] = useState('');
   const [categoriaFiltro, setCategoriaFiltro] = useState('Todos');
 
-  const categorias = ['Todos', 'Parques Nac.', 'Reservas', 'Montañas', 'Desierto'];
+  const categorias = ['Todos', 'Parques Nac.', 'Requiere reserva previa', 'Montañas', 'Desierto'];
+
+  const requiresAdvanceReservation = (conditions?: string | null): boolean => {
+    const normalized = (conditions || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+
+    return (
+      /\b(se requiere|requiere|es obligatoria|es obligatorio|obligatoria|obligatorio)\b.{0,40}\breserva\b/.test(normalized) ||
+      /\breserva\b.{0,40}\b(obligatoria|obligatorio|requerida|requerido)\b/.test(normalized)
+    );
+  };
 
   const matchCategoryName = (catNombre: string, filtro: string): boolean => {
     if (filtro === 'Todos') return true;
     const cat = catNombre.toLowerCase();
     if (filtro === 'Montañas') return cat.includes('montaña') || cat.includes('cerro') || cat.includes('senderismo') || cat.includes('trekking');
     if (filtro === 'Parques Nac.') return cat.includes('parque');
-    if (filtro === 'Reservas') return cat.includes('reserva');
     if (filtro === 'Desierto') return cat.includes('desierto');
     return cat.includes(filtro.toLowerCase());
   };
@@ -61,7 +73,9 @@ const Explorar: React.FC = () => {
       d.categoria_nombre.toLowerCase().includes(term) ||
       (term.includes('montaña') && (d.categoria_nombre.toLowerCase().includes('cerro') || d.categoria_nombre.toLowerCase().includes('senderismo')));
 
-    const matchCategoria = matchCategoryName(d.categoria_nombre, categoriaFiltro);
+    const matchCategoria = categoriaFiltro === 'Requiere reserva previa'
+      ? requiresAdvanceReservation(d.condiciones_acceso)
+      : matchCategoryName(d.categoria_nombre, categoriaFiltro);
     return matchBusqueda && matchCategoria;
   });
 

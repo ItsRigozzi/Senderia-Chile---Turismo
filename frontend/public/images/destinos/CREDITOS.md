@@ -8,5 +8,7 @@ Las imágenes de esta carpeta son fotografías de los lugares indicados. Se usan
 | `valle-de-la-luna.jpg` | Valle de la Luna, Atacama | ESO/M. Alexander | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) · [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Atacama_Moon_Valley_(_e211774-cc).jpg) |
 | `cerros-valparaiso.jpg` | Cerros de Valparaíso | Mx. Granger | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) · [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Hillside_houses_in_Valpara%C3%ADso.jpg) |
 | `termas-geometricas.jpg` | Termas Geométricas | Cristofer | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) · [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Termas_geometricas.jpg) |
+| `cerro-provincia.jpg` | Cumbre del Cerro Provincia | Alanbritom | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0/) · [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Cima_Cerro_Provincia_-_Flickr_-_Alanbritom.jpg) |
+| `cerro-el-plomo.jpg` | Cerro El Plomo | chripell | [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0/) · [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Cerro_El_Plomo_2013.jpg) |
 
 Las copias incluidas son miniaturas de 1280 px descargadas desde Wikimedia Commons. La licencia de cada imagen se conserva indicada en su fila.

@@ -4,7 +4,7 @@ import {
   IonButtons, IonBackButton,
   IonSpinner, IonText
 } from '@ionic/react';
-import { useParams } from 'react-router';
+import { useNavigate, useParams } from 'react-router-dom';
 import { destinosService, favoritosService } from '../services/api';
 import { useAuth } from '../context/useAuth';
 import { getApiErrorBody } from '../services/apiError';
@@ -24,6 +24,7 @@ interface DestinoFull {
 
 const DestinoDetalle: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [destino, setDestino] = useState<DestinoFull | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -191,7 +192,7 @@ const DestinoDetalle: React.FC = () => {
                   ) : (
                     <button
                       className="custom-primary-btn"
-                      onClick={() => window.location.href = '/login'}
+                      onClick={() => navigate('/login', { state: { from: { pathname: `/destinos/${destino.id}` } } })}
                     >
                       Inicia sesión para guardar
                     </button>
