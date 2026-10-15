@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import {
   IonPage, IonHeader, IonToolbar, IonContent, IonLoading
 } from '@ionic/react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { getApiErrorBody } from '../services/apiError';
+import { getAuthReturnPath } from '../utils/navigation';
 
 const Registro: React.FC = () => {
   const [nombre, setNombre] = useState('');
@@ -14,6 +15,7 @@ const Registro: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
   const { register } = useAuth();
 
   const handleRegister = async () => {
@@ -37,7 +39,7 @@ const Registro: React.FC = () => {
 
     try {
       await register(nombre, email, password);
-      navigate('/explorar');
+      navigate(getAuthReturnPath(location.state, location.search), { replace: true });
     } catch (err: unknown) {
       const response = getApiErrorBody(err);
       if (response?.detalles) {
@@ -115,9 +117,10 @@ const Registro: React.FC = () => {
                   className="input-control"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="usuario@dominio.cl"
+                  placeholder="Correo electrónico"
                   required
                 />
+                <small>Por favor, introduce tu correo electrónico</small>
               </div>
 
               <div className="input-group">
@@ -161,7 +164,7 @@ const Registro: React.FC = () => {
               <button
                 type="button"
                 className="custom-ghost-btn"
-                onClick={() => navigate('/login')}
+                onClick={() => navigate('/login', { state: { from: (location.state as { from?: unknown } | null)?.from } })}
               >
                 ¿Ya tienes una cuenta? Inicia sesión aquí
               </button>

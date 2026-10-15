@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import {
   IonPage, IonHeader, IonToolbar, IonContent, IonLoading
 } from '@ionic/react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { getApiErrorBody } from '../services/apiError';
+import { getAuthReturnPath } from '../utils/navigation';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -12,6 +13,7 @@ const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
 
   const handleLogin = async () => {
@@ -25,7 +27,7 @@ const Login: React.FC = () => {
 
     try {
       await login(email, password);
-      navigate('/explorar');
+      navigate(getAuthReturnPath(location.state, location.search), { replace: true });
     } catch (err: unknown) {
       const response = getApiErrorBody(err);
       if (response?.detalles) {
@@ -89,9 +91,10 @@ const Login: React.FC = () => {
                   className="input-control"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="usuario@dominio.cl"
+                  placeholder="Correo electrónico"
                   required
                 />
+                <small>Por favor, introduce tu correo electrónico</small>
               </div>
 
               <div className="input-group">
@@ -121,7 +124,7 @@ const Login: React.FC = () => {
               <button
                 type="button"
                 className="custom-ghost-btn"
-                onClick={() => navigate('/registro')}
+                onClick={() => navigate('/registro', { state: { from: (location.state as { from?: unknown } | null)?.from } })}
               >
                 ¿No tienes cuenta? Regístrate aquí
               </button>

@@ -27,7 +27,10 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !isAuthEndpoint) {
       localStorage.removeItem('senderia_token');
       localStorage.removeItem('senderia_user');
-      window.location.href = '/login';
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/registro') {
+        const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+        window.location.assign(`/login?returnTo=${encodeURIComponent(currentPath)}`);
+      }
     }
     return Promise.reject(error);
   }

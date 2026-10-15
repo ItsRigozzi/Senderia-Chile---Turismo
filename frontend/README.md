@@ -12,14 +12,12 @@ Interfaz web y móvil construida con Ionic, React y TypeScript. La aplicación c
 Desde la raíz del repositorio:
 
 ```powershell
-cd frontend
-npm install
-ionic.cmd serve
-o
+cd .\frontend
+npm.cmd install
 npm.cmd run dev
 ```
 
-También se puede iniciar con `ionic.cmd serve`. Abre la URL local que aparezca en la terminal. Crea `frontend/.env.local` desde `.env.example` solo si la API no está en la dirección local por defecto.
+Abre la URL local que aparezca en la terminal; Vite normalmente usa `http://localhost:5173`. También puedes iniciar la interfaz con `ionic.cmd serve` en lugar de `npm.cmd run dev`. Para cambiar la dirección de la API, copia `.env.example` como `.env.local` y define `VITE_API_URL`; por defecto se usa `http://localhost:3000/api`.
 
 ## Funciones conectadas
 
@@ -29,10 +27,6 @@ También se puede iniciar con `ionic.cmd serve`. Abre la URL local que aparezca 
 - Guardar y quitar destinos favoritos.
 - Restringir rutas y acciones administrativas por rol.
 - Crear, editar y eliminar destinos desde el panel de administración.
-
-## Requerimientos y diseño
-
-La planificación, los requerimientos funcionales y no funcionales, los flujos de usuario y los wireframes están en [`web y movil/planificacion_senderia_chile.md`](../web%20y%20movil/planificacion_senderia_chile.md) y en las carpetas de pantallas web y móvil.
 
 ## Imágenes
 

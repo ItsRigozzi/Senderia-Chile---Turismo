@@ -38,7 +38,7 @@ describe('Sendería Chile', () => {
     cy.contains(destino.descripcion).should('be.visible');
   });
 
-  it('permite iniciar sesión y consultar la página de favoritos', () => {
+  it('conserva el destino solicitado tras iniciar sesión y permite guardarlo en favoritos', () => {
     cy.intercept('GET', '**/api/destinos', {
       statusCode: 200,
       body: { destinos: [destino], source: 'database' },
@@ -51,7 +51,7 @@ describe('Sendería Chile', () => {
           id: 7,
           nombre: 'Usuario Cypress',
           email: 'cypress@senderia.cl',
-          rol: 'usuario',
+          rol: 'turista',
         },
         token: 'token-de-prueba',
       },
@@ -64,7 +64,7 @@ describe('Sendería Chile', () => {
           id: 7,
           nombre: 'Usuario Cypress',
           email: 'cypress@senderia.cl',
-          rol: 'usuario',
+          rol: 'turista',
         },
       },
     }).as('restaurarSesion');
@@ -86,15 +86,32 @@ describe('Sendería Chile', () => {
       },
     }).as('obtenerFavoritos');
 
-    cy.visit('/login');
+    cy.intercept('POST', '**/api/favoritos', {
+      statusCode: 201,
+      body: { mensaje: 'Destino agregado a favoritos', favorito: { id: 12, destino_id: destino.id } },
+    }).as('guardarFavorito');
+
+    cy.intercept('GET', '**/api/destinos/1', {
+      statusCode: 200,
+      body: { destino },
+    }).as('obtenerDetalle');
+
+    cy.visit('/destinos/1');
+    cy.wait('@obtenerDetalle');
+    cy.contains('button', 'Inicia sesión para guardar').click();
+    cy.location('pathname').should('eq', '/login');
     cy.get('input[type="email"]').type('cypress@senderia.cl');
     cy.get('input[type="password"]').type('ClaveDePrueba123!');
     cy.contains('button[type="submit"]', 'Iniciar Sesión').click();
 
     cy.wait('@iniciarSesion');
-    cy.location('pathname').should('eq', '/explorar');
-    cy.wait('@obtenerDestinos');
-    cy.contains('button', '♡ Favoritos').click();
+    cy.location('pathname').should('eq', '/destinos/1');
+    cy.wait('@obtenerDetalle');
+    cy.contains('button', '❤️ Guardar en Favoritos').click();
+    cy.wait('@guardarFavorito');
+    cy.contains('¡Agregado a favoritos!').should('be.visible');
+
+    cy.visit('/favoritos');
     cy.wait('@restaurarSesion');
     cy.wait('@obtenerFavoritos');
 
