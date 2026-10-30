@@ -1,33 +1,158 @@
-# Senderia Chile — Entrega Parcial 2 (Windows / PowerShell)
+# Sendería Chile — Entrega Parcial 2
 
-Aplicación turística Ionic + React conectada a una API REST Node.js + Express + TypeScript y PostgreSQL. La autenticación usa JWT (24 horas), contraseñas bcrypt y control de roles `turista`/`admin`.
+**Asignatura:** INF3245-1 — Ingeniería Web y Móvil  
+**Entrega:** EP2 — Aplicación turística con frontend, API REST, PostgreSQL y autenticación JWT
 
-## Requisitos
+Sendería Chile es una aplicación web construida con Ionic y React para explorar destinos turísticos de Chile. Las personas pueden buscar destinos, revisar su información y guardar favoritos; el equipo administrador puede mantener el catálogo desde un panel conectado al backend y PostgreSQL.
 
+> Este README describe el estado documentado del proyecto. Las capturas y reportes enlazados muestran ejecuciones concretas; no representan una calificación ni reemplazan la revisión funcional de la versión que se entregue.
+
+## 1. Descripción y alcance
+
+### Funcionalidades del proyecto
+
+| Funcionalidad | Componente o ruta | Estado en esta versión |
+|---|---|---|
+| Explorar destinos de Chile y buscar por nombre, región o categoría | `frontend/src/pages/Explorar.tsx`, `GET /api/destinos` | Implementada con datos de PostgreSQL |
+| Filtrar parques, montañas, desierto y destinos que mencionan reserva | `Explorar.tsx` | Implementada; el filtro de reserva analiza las condiciones de acceso registradas |
+| Consultar ficha con descripción, imagen, categoría, región, coordenadas, horario y acceso | `frontend/src/pages/DestinoDetalle.tsx`, `GET /api/destinos/:id` | Implementada cuando esos datos están disponibles |
+| Registrar turistas e iniciar/cerrar sesión con correo, contraseña y JWT | `frontend/src/pages/Registro.tsx`, `frontend/src/pages/Login.tsx`, `/api/auth` | Implementada |
+| Guardar, consultar y quitar favoritos | `frontend/src/pages/Favoritos.tsx`, `/api/favoritos` | Implementada y asociada al usuario autenticado |
+| Crear, editar y quitar destinos desde el panel de administración | `frontend/src/pages/AdminDashboard.tsx`, `/api/destinos` | Implementada; quitar un destino lo oculta y conserva su registro en PostgreSQL |
+| Mapa interactivo de destinos | `frontend/src/components/MapaDestinos.tsx`, `Explorar.tsx`, `DestinoDetalle.tsx` | Implementado con Leaflet y teselas de OpenStreetMap; muestra marcadores de destinos activos que tienen coordenadas |
+| Inicio de sesión con Google, verificación de correo y recuperación por correo | — | No implementados en esta versión |
+| Reseñas y calificaciones guardadas por usuarios | — | No implementadas; las estrellas visibles son contenido demostrativo de la interfaz |
+
+El catálogo que muestra la aplicación proviene de PostgreSQL y se carga mediante la API propia. `backend/src/db/seed.sql` carga datos iniciales de muestra. `backend/src/db/sernatur_carga_unica.sql` es una carga ampliada opcional con el catálogo SERNATUR y propuestas de enriquecimiento; se ejecuta por separado y no forma parte de la inicialización normal. La aplicación todavía no completa automáticamente fichas desde SERNATUR o Wikipedia. Geoapify puede resolver coordenadas cuando el administrador crea un destino sin ingresarlas, si está configurada `GEOAPIFY_API_KEY`.
+
+## 2. Equipo, repositorio y trazabilidad
+
+**Nombre del equipo:** Sendería Chile  
+**Repositorio:** [github.com/ItsRigozzi/Senderia-Chile---Turismo](https://github.com/ItsRigozzi/Senderia-Chile---Turismo)  
+**Rama principal:** [`main`](https://github.com/ItsRigozzi/Senderia-Chile---Turismo/tree/main)  
+**Rama frontend:** [`frontend`](https://github.com/ItsRigozzi/Senderia-Chile---Turismo/tree/frontend)  
+**Rama backend:** [`backend`](https://github.com/ItsRigozzi/Senderia-Chile---Turismo/tree/backend)  
+**Prototipo Figma de EP1:** [Sendería Chile — Prototipo UI/UX](https://www.figma.com/design/yRcGT1RLb30dPo94QykQva/Senderia-chile?node-id=0-1&t=yAZn8pyTL7C6l2ac-1). El acceso debe permitir que el equipo docente lo revise.
+
+**Integrantes registrados en EP1:** Rigoberto Canales, Benjamín Pizarro, Joaquín Muñoz y Simón Vera. Los cuatro integrantes participaron colaborativamente en el desarrollo del proyecto.
+
+### Relación de los requerimientos funcionales de EP1 con esta versión
+
+| ID EP1 | Funcionalidad | Implementación actual |
+|---|---|---|
+| RF-01 | Explorar destinos en un mapa interactivo con marcadores | Implementado con Leaflet y teselas de OpenStreetMap. En EP1 se propuso Google Maps; la tecnología del mapa cambió, manteniendo la exploración geográfica. |
+| RF-02 | Buscar y filtrar por categoría y región | Implementado en Explorar mediante búsqueda y filtros disponibles. |
+| RF-03 | Consultar la ficha de un destino con datos prácticos y ubicación | Implementado en la vista de detalle; el mapa aparece cuando hay coordenadas válidas. |
+| RF-04 | Crear, consultar, modificar y eliminar destinos | CRUD disponible en el panel admin. La imagen se ingresa mediante URL; eliminar oculta el destino y conserva el registro en la base de datos. |
+| RF-05 | Clasificar destinos por categoría, región y tipo | Categoría y región se asignan desde el formulario de destinos. |
+| RF-06 | Administrar categorías | La API permite operaciones CRUD de categorías; no hay una pantalla del panel admin para gestionarlas en esta versión. |
+| RF-07 | Administrar cuentas y roles | La API admin permite listar, editar nombre o rol y eliminar usuarios; no hay una pantalla de gestión de usuarios ni un campo de estado en el panel. |
+| RF-08 | Guardar y administrar destinos favoritos | Implementado para turistas autenticados mediante la API y la vista Favoritos. |
+
+| ID EP1 | Funcionalidad transversal | Implementación actual |
+|---|---|---|
+| FT-01 | Registrar usuarios | El turista se registra desde la interfaz; la cuenta admin se crea mediante un comando de backend. |
+| FT-02 | Iniciar sesión | Implementado con correo y contraseña. |
+| FT-03 | Cerrar sesión | Implementado desde la interfaz. |
+| FT-04 | Restringir acciones por rol | Implementado con rutas protegidas y validación de roles en el backend. |
+| FT-05 | Explorar como invitado | El catálogo y las fichas son públicos; favoritos requiere iniciar sesión. |
+
+**Nota de trazabilidad:** el README de EP1 dice que hay siete requerimientos funcionales principales, pero su tabla enumera ocho (RF-01 a RF-08). Esta documentación conserva los ocho identificadores tal como aparecen en esa tabla.
+
+## 3. Tecnologías
+
+| Capa | Tecnología |
+|---|---|
+| Frontend | Ionic React, React 19, TypeScript, Vite y Capacitor |
+| Backend | Node.js, Express y TypeScript |
+| Base de datos | PostgreSQL; acceso mediante `pg` |
+| Autenticación y autorización | JWT, `bcryptjs`, middleware de autenticación y roles `turista` / `admin` |
+| Mapa y cartografía | Leaflet, React Leaflet y teselas de OpenStreetMap |
+| Geocodificación de destinos | Geoapify opcional para buscar coordenadas faltantes desde el panel admin |
+| Validación y comunicación | Zod, Axios, API REST y JSON |
+| Pruebas | Node.js Test Runner, Vitest, Cypress y Postman |
+
+Las versiones detalladas están declaradas en `frontend/package.json` y `backend/package.json`. Para la ejecución documentada se requiere Node.js 22.12 o posterior y PostgreSQL 14 o posterior.
+
+## 4. Arquitectura y estructura del proyecto
+
+```text
+Senderia-Chile---Turismo/
+├── README.md
+├── evidencia/
+│   ├── auditoria-imagenes/
+│   └── recorrido-integrado/
+├── backend/
+│   ├── scripts/                 # Inicialización de PostgreSQL
+│   ├── src/
+│   │   ├── config/              # Conexión a PostgreSQL
+│   │   ├── controllers/         # HTTP y respuestas
+│   │   ├── db/                  # SQL del flujo principal
+│   │   │   ├── init.sql
+│   │   │   ├── seed.sql
+│   │   │   └── sernatur_carga_unica.sql  # Carga ampliada opcional
+│   │   ├── middleware/          # JWT y roles
+│   │   ├── routes/              # Rutas REST
+│   │   ├── services/            # Consultas y reglas de negocio
+│   │   └── validators/          # Esquemas Zod
+│   ├── test/                    # Pruebas backend e integración
+│   └── postman/                 # Colección y evidencia API
+└── frontend/
+    ├── cypress/                 # Pruebas de interfaz
+    ├── public/images/destinos/  # Imágenes y créditos
+    └── src/
+        ├── components/
+        ├── context/             # Estado de autenticación
+        ├── pages/               # Explorar, detalle, favoritos y admin
+        ├── routes/              # Protección de rutas
+        └── services/            # Cliente Axios para la API
+```
+
+```text
+Ionic + React
+     │ Axios / JSON / JWT
+     ▼
+Express :3000 → rutas → controladores → servicios → PostgreSQL
+                  │                         │
+                  └── middleware JWT/roles ─┘
+```
+
+El backend es la autoridad para autenticar usuarios y verificar roles. El frontend consume sus endpoints; las consultas y escrituras persistentes se realizan en PostgreSQL.
+
+## 5. Preparación y ejecución local
+
+### Requisitos
+
+- Windows y PowerShell (los comandos de esta guía usan `npm.cmd`).
 - Node.js 22.12 o posterior y npm ([descarga oficial](https://nodejs.org/en/download/)).
-- PostgreSQL 14 o posterior ([instalador para Windows](https://www.postgresql.org/download/windows/)). Anota la contraseña del usuario `postgres` y el puerto asignado durante la instalación.
-- PowerShell, incluido en Windows. Puedes usar la terminal integrada de Visual Studio Code
+- PostgreSQL 14 o posterior ([instalador para Windows](https://www.postgresql.org/download/windows/)).
+- Ionic CLI es opcional: se puede iniciar el frontend con Vite sin instalarlo globalmente.
 
-Esta guía está escrita para ejecutar el proyecto en Windows usando PowerShell.
+### 5.1 Obtener el proyecto e iniciar PostgreSQL
 
-## Preparación local
+Clona el repositorio y entra a la rama principal:
 
-Sigue estos pasos la primera vez que configures el proyecto en un computador.
+```powershell
+git clone https://github.com/ItsRigozzi/Senderia-Chile---Turismo.git
+cd .\Senderia-Chile---Turismo
+```
 
-### 1. Iniciar PostgreSQL
+Inicia el servicio PostgreSQL desde Windows: pulsa **Win + R**, escribe `services.msc`, busca el servicio de la versión instalada (por ejemplo, `postgresql-x64-18`) y selecciona **Iniciar** si está detenido. Después abre pgAdmin, expande **Servers** y conéctate a esa misma instalación. pgAdmin administra la conexión y las bases de datos; el servicio PostgreSQL debe estar iniciado para que la aplicación se conecte.
 
-Inicia el servicio de PostgreSQL. pgAdmin sirve para administrar y comprobar la conexión, pero no necesita permanecer abierto mientras funciona el proyecto. Si hay más de un servidor PostgreSQL instalado, confirma en pgAdmin cuál usarás y su puerto: clic derecho en el servidor → **Properties → Connection → Port**.
+En pgAdmin, expande el servidor y revisa **Properties → Connection → Port**. En esta guía se usa `5432`. Si la base `senderia` todavía no existe, créala con clic derecho en **Databases → Create → Database**, con nombre `senderia` y el usuario propietario que usarás en el backend (normalmente `postgres`). El script `init-db.ps1` también la crea automáticamente si no existe.
 
-### 2. Crear y completar `backend/.env`
+El puerto del servidor PostgreSQL debe coincidir con `DB_PORT` de `backend/.env`. No lo confundas con el puerto de la API (`3000`) ni con el del frontend Vite (normalmente `5173`).
 
-Desde la raíz del repositorio, abre PowerShell y copia la plantilla solo si todavía no existe el archivo local:
+### 5.2 Configurar el backend
 
-   ```powershell
-   if (-not (Test-Path .\backend\.env)) { Copy-Item .\backend\.env.example .\backend\.env }
-   notepad .\backend\.env
-   ```
+Desde la raíz del repositorio, crea `backend/.env` solo si todavía no existe y edítalo:
 
-Completa estos valores con la conexión real de PostgreSQL:
+```powershell
+if (-not (Test-Path .\backend\.env)) { Copy-Item .\backend\.env.example .\backend\.env }
+notepad .\backend\.env
+```
+
+Configura la conexión con los datos de tu PostgreSQL:
 
 ```env
 PORT=3000
@@ -35,44 +160,40 @@ DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=senderia
 DB_USER=postgres
-DB_PASSWORD=la contraseña que asignaste al usuario de PostgreSQL
-JWT_SECRET=un secreto aleatorio de al menos 32 caracteres
+DB_PASSWORD=tu_contraseña_local_de_postgresql
+JWT_SECRET=un_secreto_aleatorio_de_al_menos_32_caracteres
 DB_SSL=false
 ```
 
-Usa en `DB_PORT` el puerto del servidor elegido en pgAdmin; puede no ser `5432` si tienes varias versiones instaladas. Si no quieres inventar un secreto puedes genera un secreto JWT con:
+Si pgAdmin muestra otro puerto, usa ese mismo valor en `DB_PORT`. También puedes generar el secreto JWT desde PowerShell:
 
 ```powershell
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-Copia el resultado en `JWT_SECRET`. No publiques ni compartas `backend/.env`; Git está configurado para ignorar este archivo. No vuelvas a copiar la plantilla encima de un `.env` que ya contenga tu configuración.
+Copia el resultado en `JWT_SECRET`. No compartas `backend/.env` ni copies el `.env.example` encima de un archivo local que ya esté configurado.
 
-### 3. Crear la base `senderia` en pgAdmin (paso manual)
+### 5.3 Crear el esquema y cargar los datos iniciales
 
-Este paso permite verificar visualmente en qué servidor quedará la base. El script del siguiente paso también puede crearla automáticamente; si decides omitir este paso, asegúrate de que el usuario de PostgreSQL tenga permiso para crear bases de datos.
-
-1. En pgAdmin, expande **Servers → tu servidor PostgreSQL → Databases**.
-2. Haz clic derecho en **Databases → Create → Database…**.
-3. Escribe `senderia` en **Database**, selecciona `postgres` como **Owner** y pulsa **Save**.
-
-Si `senderia` ya aparece bajo el servidor correcto, no la crees de nuevo. La base debe estar en el mismo servidor y puerto configurados en `backend/.env`.
-
-### 4. Crear las tablas y cargar datos de ejemplo
-
-El archivo `backend/scripts/init-db.ps1` lee `backend/.env`, comprueba la conexión, crea la base si falta y ejecuta en orden `backend/src/db/init.sql` y `backend/src/db/seed.sql`. `init.sql` crea tablas, claves e índices; `seed.sql` carga regiones, categorías y destinos de muestra. El seed se puede volver a ejecutar.
-
-**Windows (PowerShell):** ejecuta desde la raíz del repositorio:
+Desde la raíz del repositorio:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\backend\scripts\init-db.ps1
 ```
 
-`-ExecutionPolicy Bypass` se aplica solo a este proceso de PowerShell; no cambia permanentemente la política de Windows. El script intenta localizar `psql` y `createdb` incluidos con PostgreSQL. Si la conexión falla, revisa primero `DB_HOST`, `DB_PORT`, `DB_USER` y `DB_PASSWORD`.
+El script lee `backend/.env`, comprueba la conexión, crea la base si falta y ejecuta `backend/src/db/init.sql` y `backend/src/db/seed.sql`. El esquema prepara las tablas; el seed carga regiones, categorías y destinos de muestra. La inicialización puede repetirse y no elimina toda la base de datos.
 
-### 5. Instalar dependencias y crear el administrador
+### 5.4 Cargar el catálogo SERNATUR ampliado para reproducir los datos de entrega
 
-En una terminal PowerShell, desde la raíz del repositorio:
+Después de ejecutar `init-db.ps1`, conéctate en pgAdmin a la base `senderia`, abre **Query Tool**, selecciona **File → Open File**, carga `backend/src/db/sernatur_carga_unica.sql` y presiona **F5** para guardar el catálogo ampliado en PostgreSQL. Espera a que Query Tool confirme que terminó antes de continuar. Esta carga es necesaria para que el profesor vea el catálogo SERNATUR ampliado; si se omite, la aplicación tendrá solo los destinos de muestra incluidos en `seed.sql`.
+
+No hay un comando de `npm` para esta carga: `init-db.ps1` crea la base si hace falta y ejecuta `init.sql` y `seed.sql`; el catálogo ampliado se ejecuta una vez desde pgAdmin. El archivo puede volver a ejecutarse sin duplicar los destinos identificados por código SERNATUR.
+
+`sernatur_carga_unica.sql` integra la carga fuente, la revisión, la promoción de candidatos y las ocultaciones solicitadas; es el único SQL específico de SERNATUR que se debe conservar y ejecutar. El modo opcional `--import-fuente` del script de enriquecimiento reejecuta este archivo integrado si necesita restaurar la fuente.
+
+### 5.5 Instalar dependencias y crear el administrador
+
+Desde la raíz, instala las dependencias del backend y crea o configura la cuenta administradora:
 
 ```powershell
 cd .\backend
@@ -83,94 +204,79 @@ $env:ADMIN_PASSWORD = 'escribe-una-clave-privada-de-12-caracteres-o-mas'
 npm.cmd run admin:create
 ```
 
-La contraseña del administrador debe tener al menos 12 caracteres. `admin:create` crea o actualiza esa cuenta en PostgreSQL. El registro público crea turistas, no administradores. Mantén privada la contraseña.
+La contraseña del administrador debe tener al menos 12 caracteres. Este comando crea o actualiza esa cuenta; utiliza una contraseña privada y no la guardes en el repositorio.
 
-### 6. Iniciar el backend
+### 5.6 Iniciar el backend
 
-Desde la carpeta `backend`, ejecuta y deja abierta la terminal:
+En una terminal PowerShell, desde `backend/`:
 
 ```powershell
 npm.cmd run dev
 ```
 
-La API queda en `http://localhost:3000/api`. Puedes comprobar la conexión en `http://localhost:3000/api/health`; debería indicar `database: "connected"`.
+La API queda en `http://localhost:3000/api`. El estado del servidor y de PostgreSQL se consulta en `http://localhost:3000/api/health`.
 
-### 7. Instalar e iniciar el frontend
+### 5.7 Instalar e iniciar el frontend
 
-Abre una segunda terminal desde la raíz:
+Abre una segunda terminal PowerShell desde la raíz:
 
 ```powershell
 cd .\frontend
 if (-not (Test-Path .env.local)) { Copy-Item .env.example .env.local }
 npm.cmd install
-```
-
-Para iniciar la interfaz, usa **una** opción:
-
-```powershell
-ionic.cmd serve
-```
-
-o, si Ionic CLI no está instalado:
-
-```powershell
 npm.cmd run dev
 ```
 
-Abre la dirección que indique la terminal; Vite normalmente usa `http://localhost:5173`. No ejecutes ambas opciones a la vez. El `.env.local` del frontend usa `VITE_API_URL=http://localhost:3000/api`.
+Abre la dirección que indique Vite, normalmente `http://localhost:5173`. También puedes iniciar el frontend con `ionic.cmd serve` en lugar de `npm.cmd run dev`; no ejecutes ambas opciones al mismo tiempo. La variable `VITE_API_URL` de `frontend/.env.local` debe apuntar a `http://localhost:3000/api` en desarrollo.
 
 ### Inicio en sesiones posteriores
 
-No repitas la creación de la base, la inicialización SQL ni `admin:create`, salvo que quieras reiniciar esos datos o cambiar las credenciales. Inicia PostgreSQL y abre dos terminales PowerShell: en `backend/`, `npm.cmd run dev`; en `frontend/`, `ionic.cmd serve` o `npm.cmd run dev` (solo una opción).
+Con la base ya inicializada, no repitas `init-db.ps1` ni `admin:create` para cada inicio. Inicia PostgreSQL y deja abiertas dos terminales: una en `backend/` con `npm.cmd run dev` y otra en `frontend/` con `npm.cmd run dev` o `ionic.cmd serve`.
 
-## Endpoints
+## 6. API REST disponible
 
-Todas las respuestas usan JSON. Las operaciones administrativas requieren `Authorization: Bearer <token>` de un admin; favoritos requieren usuario autenticado. Las consultas de destinos devuelven `source: "database"` para identificar los registros persistidos.
+**URL base local:** `http://localhost:3000/api`  
+**Formato:** JSON  
+**Autorización:** `Authorization: Bearer <JWT>` en rutas protegidas.
 
 | Método | Ruta | Acceso | Función |
 |---|---|---|---|
-| GET | `/api/health` | Público | Estado del servidor |
-| POST | `/api/auth/register` | Público | Registrar turista |
-| POST | `/api/auth/login` | Público | Iniciar sesión y recibir JWT |
-| GET | `/api/auth/me` | JWT | Consultar la identidad vigente desde PostgreSQL |
-| GET | `/api/destinos?categoria=<slug>&region=<slug>` | Público | Listar/filtrar destinos |
-| GET | `/api/destinos/:id` | Público | Leer destino |
-| POST | `/api/destinos` | Admin | Crear destino |
-| PUT | `/api/destinos/:id` | Admin | Actualizar destino |
-| DELETE | `/api/destinos/:id` | Admin | Eliminar destino |
-| GET | `/api/categorias` | Público | Listar categorías |
-| GET | `/api/categorias/regiones` | Público | Listar regiones |
-| POST | `/api/categorias` | Admin | Crear categoría |
-| PUT | `/api/categorias/:id` | Admin | Actualizar campos de una categoría |
-| DELETE | `/api/categorias/:id` | Admin | Eliminar categoría sin destinos asociados |
-| GET | `/api/usuarios` | Admin | Listar usuarios sin exponer hashes |
-| PATCH | `/api/usuarios/:id` | Admin | Actualizar nombre o rol |
-| DELETE | `/api/usuarios/:id` | Admin | Eliminar usuario (no permite borrar la propia cuenta) |
-| GET | `/api/favoritos` | JWT | Listar favoritos del usuario autenticado |
-| POST | `/api/favoritos` | JWT | Agregar favorito propio |
-| DELETE | `/api/favoritos/:id` | JWT | Quitar favorito propio |
+| GET | `/health` | Público | Estado de Express y conexión a PostgreSQL |
+| POST | `/auth/register` | Público | Registrar una cuenta turista |
+| POST | `/auth/login` | Público | Iniciar sesión y recibir JWT |
+| GET | `/auth/me` | JWT | Consultar la identidad vigente desde PostgreSQL |
+| GET | `/destinos?categoria=<slug>&region=<slug>` | Público | Listar y filtrar destinos activos |
+| GET | `/destinos/:id` | Público | Consultar la ficha de un destino activo |
+| POST | `/destinos` | Admin | Crear un destino |
+| PUT | `/destinos/:id` | Admin | Actualizar un destino |
+| DELETE | `/destinos/:id` | Admin | Ocultar un destino, conservando su registro en PostgreSQL |
+| GET | `/categorias` | Público | Listar categorías |
+| GET | `/categorias/regiones` | Público | Listar regiones |
+| POST | `/categorias` | Admin | Crear una categoría |
+| PUT | `/categorias/:id` | Admin | Actualizar una categoría |
+| DELETE | `/categorias/:id` | Admin | Eliminar una categoría sin destinos asociados |
+| GET | `/usuarios` | Admin | Listar usuarios sin exponer hashes de contraseña |
+| PATCH | `/usuarios/:id` | Admin | Actualizar nombre o rol |
+| DELETE | `/usuarios/:id` | Admin | Eliminar un usuario; no permite eliminar la propia cuenta |
+| GET | `/favoritos` | JWT | Listar favoritos del usuario autenticado |
+| POST | `/favoritos` | JWT | Guardar un destino como favorito |
+| DELETE | `/favoritos/:id` | JWT | Quitar un favorito propio |
 
-Validación de entradas con Zod, SQL parametrizado, claves con bcrypt y autorización aplicada también en la API. Si PostgreSQL no está disponible, las rutas persistentes responden `503`; no sustituyen datos reales por datos de muestra.
+Las rutas públicas de destinos solo devuelven registros activos. La operación `DELETE /destinos/:id` cambia ese estado a inactivo para que el destino deje de aparecer, sin borrar físicamente el registro ni sus datos de respaldo.
 
-### Ejemplos de cuerpos y respuestas
+### Ejemplos de solicitudes
 
-Las solicitudes con cuerpo usan `Content-Type: application/json`. Para rutas protegidas, envía `Authorization: Bearer <token>`.
-
-**Registro de turista — `POST /api/auth/register`:**
+**Registro — `POST /auth/register`:**
 
 ```json
 {
   "nombre": "Turista de prueba",
-  "email": "turista@example.test",
-  "password": "clave-de-ejemplo"
+  "email": "turista@example.com",
+  "password": "ClaveDePrueba123"
 }
 ```
 
-Respuesta esperada: `201 Created`, con `mensaje`, `usuario` (`id`, `nombre`, `email`, `rol`) y `token`. Datos inválidos responden `400`; un correo ya registrado responde `409`.
-
-**Inicio de sesión — `POST /api/auth/login`:** recibe `email` y `password`. Responde `200 OK` con `mensaje`, `usuario` y `token`; datos inválidos responden `400` y credenciales incorrectas `401`.
-
-**Crear destino — `POST /api/destinos` (admin):**
+**Crear destino — `POST /destinos` (requiere JWT de admin):**
 
 ```json
 {
@@ -180,113 +286,184 @@ Respuesta esperada: `201 Created`, con `mensaje`, `usuario` (`id`, `nombre`, `em
   "region_id": 1,
   "latitud": -33.45,
   "longitud": -70.66,
-  "horario": "Acceso libre"
+  "horario": "Acceso libre",
+  "condiciones_acceso": "Revisar las condiciones antes de la visita.",
+  "imagen_url": "https://example.com/imagen.jpg"
 }
 ```
 
-Responde `201 Created` con `mensaje` y el objeto `destino`. Una entrada inválida responde `400`, una solicitud sin sesión `401` y una cuenta sin rol admin `403`. La actualización `PUT /api/destinos/:id` acepta campos parciales, responde `200` y devuelve `404` si no existe el destino.
+El registro exitoso responde `201`; los datos inválidos responden `400` y un correo ya registrado `409`. En rutas protegidas, una sesión ausente o inválida responde `401` y un rol insuficiente `403`. Un recurso inexistente responde `404`; un problema de conexión con PostgreSQL puede responder `503`.
 
-**Favoritos — rutas que requieren JWT:** `GET /api/favoritos` responde `200` con `{ "favoritos": [...] }`. Para agregar, `POST /api/favoritos` recibe `{ "destino_id": 1 }` y responde `201` con `mensaje` y `favorito`; un ID inválido responde `400`, un destino inexistente `404` y un favorito duplicado `409`. `DELETE /api/favoritos/:id` responde `200`; un ID mal formado responde `400` y si ese favorito no existe o no pertenece al usuario responde `404`. Sin JWT, las rutas protegidas responden `401`.
+## 7. Seguridad y autenticación
 
-**Categorías y regiones:** `GET /api/categorias` responde `200` con `{ "categorias": [...] }`; `GET /api/categorias/regiones` responde `200` con `{ "regiones": [...] }`. Un administrador puede crear con `POST /api/categorias` (`201`), editar con `PUT /api/categorias/:id` (`200`) y eliminar con `DELETE /api/categorias/:id` (`200`). Las entradas inválidas responden `400`, nombres o slugs repetidos `409`, categorías con destinos asociados `409`, recursos inexistentes `404`, falta de sesión `401` y rol insuficiente `403`.
+| Control | Implementación en Sendería |
+|---|---|
+| JWT | Token de sesión firmado con `JWT_SECRET`, con expiración de 24 horas |
+| Contraseñas | Hash con bcrypt mediante `bcryptjs`; nunca se devuelve el hash en las rutas de usuarios |
+| Roles | Roles `turista` y `admin`; el middleware de backend verifica permisos en rutas administrativas |
+| Validación | Esquemas Zod para entradas y parámetros; contraseña turista de al menos 8 caracteres con al menos una letra o número; contraseña admin de al menos 12 caracteres |
+| SQL | Consultas parametrizadas con PostgreSQL y restricciones de integridad en el esquema |
+| Correo | Normalizado a minúsculas y espacios recortados para registro e inicio de sesión |
+| Coordenadas | Validación de latitud y longitud en la API y restricciones de rango en PostgreSQL |
+| Secreto | `JWT_SECRET` se define en el entorno local; el backend no inicia si falta o es un valor de ejemplo débil |
+| Destinos | El borrado desde el panel es lógico: se conserva el registro y se excluye del catálogo activo |
 
-**Usuarios — solo admin:** `GET /api/usuarios` devuelve `{ "usuarios": [...] }` sin hashes de contraseña; `PATCH /api/usuarios/:id` acepta `nombre` o `rol`; `DELETE /api/usuarios/:id` elimina una cuenta. Las actualizaciones responden `200`, entradas inválidas `400` y usuarios inexistentes `404`. No se permite que un administrador elimine su propia cuenta (`400`). Para estas rutas se espera `401` sin JWT y `403` con un JWT de turista.
+El registro/inicio de sesión actual usa correo y contraseña. Google OAuth, confirmación de correo y recuperación de contraseña por correo no forman parte de esta versión. La configuración CORS de desarrollo acepta los orígenes locales `localhost:5173` y `localhost:8100`; se debe adaptar si se despliega la aplicación en otro dominio.
 
-**Formato de errores:** los errores de validación responden `{ "error": "Datos inválidos", "detalles": { ... } }`. Los demás errores responden `{ "error": "..." }`; las respuestas de éxito contienen el recurso bajo su nombre (`destino`, `categoria`, `usuario` o `favoritos`) y, cuando corresponde, un campo `mensaje`.
+**Dependencias:** la revisión documentada anteriormente registró tres alertas moderadas asociadas a React Router. Esta edición del README no ejecutó una auditoría nueva; revisar el estado actual antes de publicar y evaluar cualquier actualización para mantener compatibilidad con Ionic. No aplicar actualizaciones forzadas sin revisar sus cambios.
 
-## Pruebas reproducibles
+## 8. Integración frontend–backend
 
-### Prueba automatizada de integración API/PostgreSQL
+El frontend realiza solicitudes HTTP con Axios desde `frontend/src/services/api.ts`. La dirección base se configura mediante `VITE_API_URL`. El backend valida los datos, autentica las sesiones, aplica permisos y consulta PostgreSQL; el frontend muestra los resultados y maneja los errores devueltos por la API.
 
-Con PostgreSQL y el backend activos, abre una tercera terminal PowerShell. Desde la raíz del repositorio ejecuta:
+Flujos incluidos:
+
+1. El usuario explora el catálogo que entrega `GET /api/destinos`.
+2. Al abrir una ficha, el frontend consulta `GET /api/destinos/:id` y muestra la información guardada junto con un mapa interactivo cuando el destino tiene coordenadas válidas.
+3. El registro o inicio de sesión entrega un JWT de Sendería; el frontend lo utiliza en las rutas que requieren autenticación.
+4. Los favoritos se consultan y modifican en la API para el usuario autenticado.
+5. El panel admin envía altas, cambios y bajas lógicas de destinos a la API; las modificaciones quedan en PostgreSQL.
+
+El recorrido integrado capturado está en [`evidencia/recorrido-integrado/`](evidencia/recorrido-integrado/). Las pruebas Cypress, en cambio, interceptan respuestas HTTP y no reemplazan la comprobación con el backend y PostgreSQL reales.
+
+## 9. Pruebas y evidencia EP2
+
+### Reporte de Postman guardado
+
+El reporte JSON archivado registra **47 pruebas aprobadas y 0 fallidas** en una ejecución del 15 de octubre de 2026. Antes de la entrega, volver a ejecutar la colección si cambian la API o las solicitudes y actualizar las evidencias con el resultado más reciente.
+
+- Colección: [`backend/postman/Senderia-EP2.postman_collection.json`](backend/postman/Senderia-EP2.postman_collection.json).
+- Reporte JSON: [`Senderia Chile - EP2 API.postman_test_run.json`](backend/postman/evidencia/Senderia%20Chile%20-%20EP2%20API.postman_test_run.json).
+- Captura de Postman: [`Senderia-EP2-evidencia.png`](backend/postman/evidencia/Senderia-EP2-evidencia.png).
+- Captura de integración backend/PostgreSQL: [`Senderia-EP2-test-api-backend.png`](backend/postman/evidencia/Senderia-EP2-test-api-backend.png).
+
+### Ejecutar manualmente la colección Postman
+
+1. En Postman Desktop, importa `backend/postman/Senderia-EP2.postman_collection.json`.
+2. Selecciona un Environment local y configura `baseUrl` (`http://localhost:3000/api`), `adminEmail`, `adminPassword` y `turistaPassword`. Usa una contraseña temporal de turista con al menos 8 caracteres y por lo menos una letra o número. El correo de prueba se genera automáticamente.
+3. Con PostgreSQL y el backend activos, ejecuta la colección completa en orden y con una iteración. Crea datos temporales para probar autenticación, permisos y operaciones CRUD; al final los elimina. Si una ejecución se interrumpe, revisa la base y elimina manualmente los datos temporales que hayan quedado.
+4. No compartas el Environment si contiene contraseñas ni exportes tokens en el reporte.
+
+### Comandos de verificación disponibles
+
+Ejecuta cada comando en su carpeta correspondiente:
+
+| Verificación | Comando | Observación |
+|---|---|---|
+| Compilación y pruebas de validación backend | `npm.cmd test` en `backend/` | El script compila y ejecuta Node.js Test Runner |
+| Integración API/PostgreSQL | `npm.cmd run test:api` en `backend/` | Requiere PostgreSQL, API activa, base y credenciales de admin configuradas |
+| Pruebas unitarias frontend | `npm.cmd run test.unit -- --run` en `frontend/` | Vitest |
+| Pruebas de interfaz | `npm.cmd run test.e2e` en `frontend/` | Requiere Vite activo en `localhost:5173`; Cypress usa respuestas de API simuladas |
+| Lint y compilación frontend | `npm.cmd run lint` y `npm.cmd run build` en `frontend/` | ESLint, TypeScript y Vite |
+
+### Ejecutar la prueba de integración
+
+Desde `backend/`, con PostgreSQL y la API activa en otra terminal, y con un administrador existente:
 
 ```powershell
-cd .\backend
 $env:ADMIN_EMAIL = 'admin@senderia.cl'
 $env:ADMIN_PASSWORD = 'tu-contraseña-admin-actual'
 npm.cmd run test:api
 ```
 
-Usa las credenciales locales de un administrador existente. La prueba crea un turista, categoría, destino y favorito temporales; comprueba autenticación, JWT, persistencia PostgreSQL, CRUD, permisos admin/turista y que la API no exponga hashes de contraseña. Al finalizar intenta eliminar los datos temporales. Un resultado exitoso muestra `pass 1`, `fail 0` y `skipped 0`. No compartas la contraseña ni guardes este comando con una contraseña real en el repositorio.
+La prueba crea registros temporales para revisar autenticación, persistencia, CRUD, permisos y protección de hashes. No incluyas contraseñas ni tokens en evidencias compartidas.
 
-### Pruebas manuales de API con Postman
+### Evidencia del recorrido integrado
 
-1. En Postman Desktop, importa `backend/postman/Senderia-EP2.postman_collection.json` desde **Import** o arrastrando el archivo a Postman.
-2. Crea y selecciona un Environment local con `adminEmail`, `adminPassword` y `turistaPassword`. El primer par corresponde a un admin ya creado en la base local; `turistaPassword` es una clave temporal de al menos 6 caracteres. La colección genera automáticamente un correo nuevo para el turista de prueba, así que no ingreses `turistaEmail`.
-3. Ejecuta la colección completa en orden, con una iteración. Crea un turista, una categoría y un destino temporales; prueba autenticación, roles y CRUD; luego elimina los datos de prueba. Varias solicitudes esperan errores `400`, `401`, `403` o `409`; se consideran aprobadas cuando la API rechaza correctamente esas operaciones.
-4. Después de ejecutar la versión actual de la colección, guarda la nueva captura y el nuevo reporte en `backend/postman/evidencia/`. Los archivos que ya estaban guardados corresponden a una ejecución anterior de la colección; reemplázalos solo después de confirmar que el nuevo resumen muestra cero fallos. Antes de compartir el reporte JSON, comprueba que no incluya contraseñas ni tokens.
+Las capturas están ordenadas en [`evidencia/recorrido-integrado/README.md`](evidencia/recorrido-integrado/README.md): ejecución de servicios, exploración pública, sesión admin, formulario de destinos, registro e inicio de sesión turista, detalle y favoritos. Son evidencia visual del flujo capturado; no sustituyen las pruebas automatizadas.
 
-### Pruebas de interfaz con Cypress
+## 10. Modelo relacional
 
-Las pruebas Cypress usan respuestas simuladas para probar la interfaz; no requieren PostgreSQL ni el backend. En una terminal PowerShell, desde la raíz:
+**Esquema:** [`backend/src/db/init.sql`](backend/src/db/init.sql).  
+**Datos iniciales:** [`backend/src/db/seed.sql`](backend/src/db/seed.sql).
 
-```powershell
-cd .\frontend
-npm.cmd run dev
+El modelo contiene regiones, categorías, usuarios, destinos y favoritos. Las claves foráneas conectan cada destino con su región y categoría, y los favoritos con un usuario y un destino. Los destinos incluyen `activo` para conservar los registros quitados del catálogo.
+
+```mermaid
+erDiagram
+    REGIONES ||--o{ DESTINOS : contiene
+    CATEGORIAS ||--o{ DESTINOS : clasifica
+    USUARIOS ||--o{ FAVORITOS : guarda
+    DESTINOS ||--o{ FAVORITOS : recibe
+
+    REGIONES {
+        int id PK
+        string nombre UK
+        string slug UK
+    }
+    CATEGORIAS {
+        int id PK
+        string nombre UK
+        string slug UK
+        string descripcion
+    }
+    USUARIOS {
+        int id PK
+        string nombre
+        string email UK
+        string password_hash
+        string rol
+    }
+    DESTINOS {
+        int id PK
+        string nombre
+        int categoria_id FK
+        int region_id FK
+        float latitud
+        float longitud
+        string horario
+        boolean activo
+    }
+    FAVORITOS {
+        int id PK
+        int usuario_id FK
+        int destino_id FK
+    }
 ```
 
-Deja ese servidor activo en `http://localhost:5173` y ejecuta en una segunda terminal:
+La base impide duplicar el mismo nombre de destino dentro de una región y limita las coordenadas a rangos geográficos válidos. En favoritos, la combinación usuario/destino es única.
 
-```powershell
-cd .\frontend
-npm.cmd run test.e2e
-```
+## 11. Matriz de cumplimiento EP2
 
-Las pruebas Cypress comprueban explorar/abrir un destino y el flujo de intentar guardarlo como favorito, iniciar sesión, volver a ese destino, guardarlo y consultarlo en Favoritos. Pasan cuando el resumen muestra `2 passing` y `0 failing`.
+Esta matriz relaciona los componentes del proyecto con los criterios de entrega documentados. **No asigna puntajes ni reemplaza la evaluación del profesor.**
 
-### Otras verificaciones
+| Criterio | Implementación identificada | Estado/evidencia |
+|---|---|---|
+| EP 2.1 — Servidor | API modular Express/TypeScript en `backend/src/` | Código y comandos de ejecución documentados |
+| EP 2.2 — Base relacional | PostgreSQL, esquema y seed reproducibles | SQL en `backend/src/db/`; inicialización en sección 5 |
+| EP 2.3 — API REST | Rutas públicas y protegidas para destinos, categorías, usuarios y favoritos | Endpoints documentados en sección 6; colección Postman adjunta |
+| EP 2.4 — JWT y roles | Login, JWT con expiración, middleware y roles `turista` / `admin` | Código en `auth`, `middleware` y rutas protegidas |
+| EP 2.5 — Seguridad | bcrypt, Zod, consultas parametrizadas, secreto en entorno y permisos de backend | Implementado en la API; revisar configuración antes de despliegue |
+| EP 2.6 — Ionic React y backend | Ionic React consume API REST con Axios | Vistas y servicios en `frontend/src/`; recorrido visual guardado |
+| EP 2.7 — Pruebas | Postman, pruebas backend, Vitest y Cypress | Reporte Postman archivado; repetir verificaciones finales tras los cambios |
+| Documentación y trazabilidad | README con arquitectura, ejecución, endpoints, modelo, evidencia, requisitos EP1 y Figma | RF-01 a RF-08 relacionados con la implementación; Figma de EP1 enlazado |
 
-Desde `backend/`:
+## 12. Lista de verificación antes de la entrega
 
-```powershell
-npm.cmd test
-npm.cmd run build
-```
+- [x] Documentar cómo configurar PostgreSQL y ejecutar el proyecto en Windows.
+- [x] Documentar API, autenticación, roles, modelo SQL y pruebas disponibles.
+- [x] Guardar evidencia Postman y capturas del recorrido integrado.
+- [x] Asociar las funcionalidades a los identificadores RF-01 a RF-08 definidos en EP1.
+- [x] Incorporar el enlace del prototipo Figma de EP1.
+- [ ] Ejecutar nuevamente el recorrido integrado con frontend, backend y PostgreSQL después de los últimos cambios.
+- [ ] Ejecutar las verificaciones finales y actualizar el reporte/evidencia de Postman si corresponde.
+- [ ] Revisar nuevamente las alertas de dependencias antes de publicar.
+- [x] Integrar el mapa interactivo con Leaflet y OpenStreetMap en Explorar y en las fichas con coordenadas.
+- [ ] Confirmar que el repositorio y la versión en `main` sean accesibles para el profesor y ayudante.
+- [ ] Revisar la URL registrada en Aula Virtual y los permisos del repositorio.
 
-Desde `frontend/`:
+El mapa interactivo ya está implementado con Leaflet y OpenStreetMap. El inicio de sesión con Google, la confirmación de correo y la recuperación de contraseña por correo siguen fuera de esta versión y dependen del alcance acordado con el profesor.
 
-```powershell
-npm.cmd run lint
-npm.cmd run test.unit -- --run
-npm.cmd run build
-```
+## 13. Referencias y recursos del proyecto
 
-La prueba de integración `npm.cmd run test:api` requiere PostgreSQL, la API y credenciales admin. La prueba Cypress requiere que el servidor Vite esté activo. No es necesario ejecutar PostgreSQL ni el backend para Cypress.
-
-## Estado de dependencias
-
-La última auditoría local redujo las alertas iniciales de dependencias. Quedan tres alertas moderadas asociadas a React Router, que se mantienen pendientes mientras se revisa una actualización compatible con Ionic. No se aplicó `npm audit fix --force` ni se considera que las alertas estén resueltas o que tengan impacto nulo. Revisar nuevamente las dependencias antes de una publicación o despliegue.
-
-## Evidencia de pruebas
-
-- Postman: [`Senderia-EP2-evidencia.png`](backend/postman/evidencia/Senderia-EP2-evidencia.png).
-- Integración backend/PostgreSQL: [`Senderia-EP2-test-api-backend.png`](backend/postman/evidencia/Senderia-EP2-test-api-backend.png).
-
-El reporte JSON de Postman está en la misma carpeta de evidencia; revísalo y elimina cualquier contraseña o token antes de subirlo o compartirlo.
-
-## Guía de implementación por rúbrica EP2
-
-- **EP 2.1:** `backend/src/index.ts`, `backend/src/routes/`, `backend/src/controllers/`, `backend/src/services/` y `backend/src/config/`.
-- **EP 2.2:** modelo reproducible `backend/src/db/init.sql`; datos de muestra `backend/src/db/seed.sql`.
-- **EP 2.3:** CRUD REST de destinos/categorías y operaciones de usuarios/favoritos descritas arriba.
-- **EP 2.4:** `backend/src/middleware/auth.ts`, `backend/src/middleware/roleGuard.ts`, `frontend/src/context/AuthContext.tsx`.
-- **EP 2.5:** bcrypt, secreto JWT aleatorio obligatorio, Zod, consultas parametrizadas, límites de coordenadas también en PostgreSQL y autorización por rol.
-- **EP 2.6:** cliente en `frontend/src/services/api.ts`; vistas Ionic conectadas; panel admin CRUD real en `frontend/src/pages/AdminDashboard.tsx`.
-- **EP 2.7:** colección Postman con casos funcionales y de error, autenticación, cuerpos de solicitudes y comprobaciones; capturas de ejecución en `backend/postman/evidencia/`.
-- **Documentación/gestión:** guía de puesta en marcha y ramas listadas abajo.
-
-## Rama y acceso de evaluación
-
-El repositorio organiza el trabajo en tres ramas: `main` como rama principal de la entrega, `frontend` para la interfaz Ionic/React y su documentación, y `backend` para la API, SQL, colección Postman y evidencia de pruebas. Comprueba que la versión que revisará el profesor esté incorporada en `main` y que las ramas `frontend` y `backend` contengan sus archivos correspondientes.
-
-Las fotografías locales de muestra y sus licencias están documentadas en [`frontend/public/images/destinos/CREDITOS.md`](frontend/public/images/destinos/CREDITOS.md).
-
-La rama principal se puede obtener en otro equipo con:
-
-```powershell
-git fetch origin
-git switch main
-git pull
-```
-
-Ingresa la URL del repositorio en la planilla del Aula Virtual y comprueba que el profesor/ayudante tenga acceso. Si el repositorio es privado, agrega a las personas evaluadoras con los permisos que solicite el curso.
+- [Ionic React](https://ionicframework.com/docs/react/overview)
+- [React](https://react.dev/)
+- [Express](https://expressjs.com/)
+- [PostgreSQL](https://www.postgresql.org/docs/)
+- [JSON Web Tokens](https://jwt.io/introduction)
+- [Zod](https://zod.dev/)
+- [Postman](https://learning.postman.com/docs/)
+- [Cypress](https://docs.cypress.io/)
+- Créditos, autoría y licencias de las imágenes locales: [`frontend/public/images/destinos/CREDITOS.md`](frontend/public/images/destinos/CREDITOS.md).
+- Créditos, licencias y fuentes de las cuatro imágenes de reemplazo SERNATUR: [`evidencia/auditoria-imagenes/creditos-reemplazos.md`](evidencia/auditoria-imagenes/creditos-reemplazos.md).
+- Informe y resultados de la revisión visual del catálogo: [`evidencia/auditoria-imagenes/README.md`](evidencia/auditoria-imagenes/README.md).

@@ -35,3 +35,6 @@ yarn-error.log*
 
 # Optional eslint cache
 .eslintcache
+
+# Apuntes internos que no forman parte de la entrega
+/PLAN_INICIO_GOOGLE_Y_RECUPERACION_CONTRASENA.md
