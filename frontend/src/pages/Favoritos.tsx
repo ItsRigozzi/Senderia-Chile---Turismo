@@ -3,6 +3,7 @@ import { IonButton, IonContent, IonHeader, IonPage, IonSpinner, IonToolbar } fro
 import { useNavigate } from 'react-router-dom';
 import { favoritosService } from '../services/api';
 import { getApiErrorBody } from '../services/apiError';
+import BrandLink from '../components/BrandLink';
 
 interface Favorito {
   favorito_id: number;
@@ -47,10 +48,7 @@ const Favoritos: React.FC = () => {
       <IonHeader>
         <IonToolbar className="senderia-navbar">
           <div className="favorites-navbar-inner">
-            <div className="favorites-brand">
-              <span className="brand-badge" aria-hidden="true">▲</span>
-              <strong>Senderia <span>Chile</span></strong>
-            </div>
+            <BrandLink />
             <button className="favorites-back-button" type="button" onClick={() => navigate('/explorar')}>
               <span aria-hidden="true">←</span> Volver a Explorar Destinos
             </button>

@@ -6,6 +6,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { getApiErrorBody } from '../services/apiError';
 import { getAuthReturnPath } from '../utils/navigation';
+import BrandLink from '../components/BrandLink';
 
 const Registro: React.FC = () => {
   const [nombre, setNombre] = useState('');
@@ -29,8 +30,13 @@ const Registro: React.FC = () => {
       return;
     }
 
-    if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres');
+    if (password.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres');
+      return;
+    }
+
+    if (!/[a-zA-Z0-9]/.test(password)) {
+      setError('La contraseña debe incluir al menos una letra o un número');
       return;
     }
 
@@ -60,12 +66,7 @@ const Registro: React.FC = () => {
       <IonHeader>
         <IonToolbar className="senderia-navbar">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => navigate('/explorar')}>
-              <span className="brand-badge">▲</span>
-              <span style={{ fontWeight: 700, fontSize: '18px', color: '#0F172A' }}>
-                Senderia <span style={{ color: '#64748B', fontWeight: 400 }}>Chile</span>
-              </span>
-            </div>
+            <BrandLink />
             <button
               onClick={() => navigate('/explorar')}
               style={{ background: 'none', border: 'none', color: '#64748B', fontSize: '13px', cursor: 'pointer' }}
@@ -132,7 +133,9 @@ const Registro: React.FC = () => {
                   className="input-control"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder="Mínimo 8 caracteres; incluye una letra o número"
+                  minLength={8}
+                  pattern=".*[A-Za-z0-9].*"
                   required
                 />
               </div>

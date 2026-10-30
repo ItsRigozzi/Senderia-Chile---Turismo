@@ -6,6 +6,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { getApiErrorBody } from '../services/apiError';
 import { getAuthReturnPath } from '../utils/navigation';
+import BrandLink from '../components/BrandLink';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -48,12 +49,7 @@ const Login: React.FC = () => {
       <IonHeader>
         <IonToolbar className="senderia-navbar">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => navigate('/explorar')}>
-              <span className="brand-badge">▲</span>
-              <span style={{ fontWeight: 700, fontSize: '18px', color: '#0F172A' }}>
-                Senderia <span style={{ color: '#64748B', fontWeight: 400 }}>Chile</span>
-              </span>
-            </div>
+            <BrandLink />
             <button
               onClick={() => navigate('/explorar')}
               style={{ background: 'none', border: 'none', color: '#64748B', fontSize: '13px', cursor: 'pointer' }}

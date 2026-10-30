@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
+  IonPage, IonHeader, IonToolbar, IonContent,
   IonButtons, IonBackButton,
   IonSpinner, IonText
 } from '@ionic/react';
@@ -8,6 +8,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { destinosService, favoritosService } from '../services/api';
 import { useAuth } from '../context/useAuth';
 import { getApiErrorBody } from '../services/apiError';
+import BrandLink from '../components/BrandLink';
+
+const MapaDestinos = lazy(() => import('../components/MapaDestinos'));
 
 interface DestinoFull {
   id: number;
@@ -29,7 +32,9 @@ const DestinoDetalle: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [favMsg, setFavMsg] = useState('');
-  const { isAuthenticated } = useAuth();
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [checkingFavorite, setCheckingFavorite] = useState(false);
+  const { isAuthenticated, loading: authLoading } = useAuth();
 
   useEffect(() => {
     const fetchDestino = async () => {
@@ -50,19 +55,54 @@ const DestinoDetalle: React.FC = () => {
     fetchDestino();
   }, [id]);
 
+  useEffect(() => {
+    if (authLoading || !destino) return;
+    if (!isAuthenticated) {
+      setIsFavorite(false);
+      return;
+    }
+
+    let active = true;
+    setCheckingFavorite(true);
+    favoritosService.getAll()
+      .then((response) => {
+        const favoritos = response.data?.favoritos || [];
+        if (active) {
+          setIsFavorite(favoritos.some((favorito: { id?: number; destino_id?: number }) =>
+            Number(favorito.destino_id ?? favorito.id) === destino.id));
+        }
+      })
+      .catch(() => {
+        if (active) setIsFavorite(false);
+      })
+      .finally(() => {
+        if (active) setCheckingFavorite(false);
+      });
+
+    return () => { active = false; };
+  }, [authLoading, destino, isAuthenticated]);
+
   const handleAddFavorito = async () => {
     if (!destino) return;
     try {
       await favoritosService.add(destino.id);
+      setIsFavorite(true);
       setFavMsg('¡Agregado a favoritos!');
     } catch (err: unknown) {
-      setFavMsg(getApiErrorBody(err)?.error || 'Error al agregar a favoritos');
+      const message = getApiErrorBody(err)?.error || 'Error al agregar a favoritos';
+      if (message.toLowerCase().includes('ya está en tus favoritos')) setIsFavorite(true);
+      setFavMsg(message);
     }
   };
 
   if (loading) {
     return (
       <IonPage>
+        <IonHeader>
+          <IonToolbar className="senderia-navbar">
+            <div className="detail-navbar-inner"><BrandLink /></div>
+          </IonToolbar>
+        </IonHeader>
         <IonContent className="ion-padding ion-text-center">
           <IonSpinner />
         </IonContent>
@@ -74,9 +114,11 @@ const DestinoDetalle: React.FC = () => {
     return (
       <IonPage>
         <IonHeader>
-          <IonToolbar>
-            <IonButtons slot="start"><IonBackButton defaultHref="/explorar" /></IonButtons>
-            <IonTitle>Detalle del Destino</IonTitle>
+          <IonToolbar className="senderia-navbar">
+            <div className="detail-navbar-inner">
+              <BrandLink />
+              <IonButtons><IonBackButton defaultHref="/explorar" text="Volver" /></IonButtons>
+            </div>
           </IonToolbar>
         </IonHeader>
         <IonContent className="ion-padding">
@@ -90,16 +132,10 @@ const DestinoDetalle: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar className="senderia-navbar">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', height: '64px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => window.location.href = '/explorar'}>
-              <span className="brand-badge">▲</span>
-              <span style={{ fontWeight: 700, fontSize: '18px', color: '#0F172A' }}>
-                Senderia <span style={{ color: '#64748B', fontWeight: 400 }}>Chile</span>
-              </span>
-            </div>
-
+          <div className="detail-navbar-inner">
+            <BrandLink />
             <button
-              onClick={() => window.location.href = '/explorar'}
+              onClick={() => navigate('/explorar')}
               style={{ background: 'none', border: 'none', color: '#64748B', fontSize: '13px', cursor: 'pointer', fontWeight: 500 }}
             >
               ← Volver a Explorar Destinos
@@ -186,8 +222,12 @@ const DestinoDetalle: React.FC = () => {
                     <button
                       className="custom-primary-btn"
                       onClick={handleAddFavorito}
+                      aria-busy={checkingFavorite}
                     >
-                      ❤️ Guardar en Favoritos
+                      <span className={`favorite-heart${isFavorite ? ' is-saved' : ''}`} aria-hidden="true">
+                        {isFavorite ? '♥' : '♡'}
+                      </span>{' '}
+                      Guardar en Favoritos
                     </button>
                   ) : (
                     <button
@@ -207,6 +247,32 @@ const DestinoDetalle: React.FC = () => {
               </div>
             </div>
           </div>
+
+          <section className="destination-map-section" aria-labelledby="destination-map-title">
+            <div className="destination-map-heading">
+              <div>
+                <h2 id="destination-map-title">Ubicación del destino</h2>
+                <p>Explora el mapa y revisa el punto marcado para este lugar.</p>
+              </div>
+              <span className="destination-map-coordinates">
+                {Number(destino.latitud).toFixed(5)}, {Number(destino.longitud).toFixed(5)}
+              </span>
+            </div>
+            <Suspense fallback={<div className="destination-map-loading">Cargando mapa…</div>}>
+              <MapaDestinos
+                destinos={[{
+                  id: destino.id,
+                  nombre: destino.nombre,
+                  region_nombre: destino.region_nombre,
+                  categoria_nombre: destino.categoria_nombre,
+                  latitud: Number(destino.latitud),
+                  longitud: Number(destino.longitud),
+                }]}
+                scrollWheelZoom
+                footerText="Marcador según las coordenadas guardadas para este destino."
+              />
+            </Suspense>
+          </section>
         </div>
       </IonContent>
     </IonPage>

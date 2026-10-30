@@ -4,13 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import { categoriasService, destinosService } from '../services/api';
 import { useAuth } from '../context/useAuth';
 import { getApiErrorBody } from '../services/apiError';
+import BrandLink from '../components/BrandLink';
 
 interface Categoria { id: number; nombre: string; }
 interface Region { id: number; nombre: string; }
 interface Destino {
   id: number; nombre: string; categoria_id: number; categoria_nombre: string;
-  region_id: number; region_nombre: string; descripcion?: string; latitud: number;
-  longitud: number; horario?: string; condiciones_acceso?: string; imagen_url?: string;
+  region_id: number; region_nombre: string; descripcion?: string; latitud: number | null;
+  longitud: number | null; horario?: string; condiciones_acceso?: string; imagen_url?: string;
 }
 
 const initialForm = {
@@ -59,7 +60,8 @@ const AdminDashboard: React.FC = () => {
     setForm({
       nombre: destino.nombre, descripcion: destino.descripcion || '',
       categoria_id: String(destino.categoria_id), region_id: String(destino.region_id),
-      latitud: String(destino.latitud), longitud: String(destino.longitud),
+      latitud: destino.latitud == null ? '' : String(destino.latitud),
+      longitud: destino.longitud == null ? '' : String(destino.longitud),
       horario: destino.horario || '', condiciones_acceso: destino.condiciones_acceso || '',
       imagen_url: destino.imagen_url || '',
     });
@@ -69,17 +71,30 @@ const AdminDashboard: React.FC = () => {
   const saveDestino = async (event: React.FormEvent) => {
     event.preventDefault();
     setSaving(true); setError(''); setNotice('');
+    const hasLatitude = form.latitud.trim() !== '';
+    const hasLongitude = form.longitud.trim() !== '';
+    if (hasLatitude !== hasLongitude) {
+      setError('Ingresa latitud y longitud juntas, o deja ambas vacías para ubicar por nombre y región.');
+      setSaving(false);
+      return;
+    }
     const payload = {
       nombre: form.nombre.trim(), descripcion: form.descripcion.trim(),
       categoria_id: Number(form.categoria_id), region_id: Number(form.region_id),
-      latitud: Number(form.latitud), longitud: Number(form.longitud),
+      latitud: hasLatitude ? Number(form.latitud) : null,
+      longitud: hasLongitude ? Number(form.longitud) : null,
       horario: form.horario.trim(), condiciones_acceso: form.condiciones_acceso.trim(),
       ...(form.imagen_url.trim() ? { imagen_url: form.imagen_url.trim() } : {}),
     };
     try {
-      if (editingId) await destinosService.update(editingId, payload);
-      else await destinosService.create(payload);
-      setNotice(editingId ? 'Destino actualizado.' : 'Destino creado.');
+      const response = editingId
+        ? await destinosService.update(editingId, payload)
+        : await destinosService.create(payload);
+      const savedDestination = response.data?.destino;
+      const locationNotice = !hasLatitude && savedDestination
+        ? ` Coordenadas asignadas automáticamente: ${Number(savedDestination.latitud).toFixed(5)}, ${Number(savedDestination.longitud).toFixed(5)}. Revisa el marcador antes de entregar.`
+        : '';
+      setNotice(`${editingId ? 'Destino actualizado.' : 'Destino creado.'}${locationNotice}`);
       resetForm();
       await loadData();
     } catch (err: unknown) {
@@ -88,14 +103,14 @@ const AdminDashboard: React.FC = () => {
   };
 
   const deleteDestino = async (destino: Destino) => {
-    if (!window.confirm(`¿Eliminar “${destino.nombre}”?`)) return;
+    if (!window.confirm(`¿Quitar “${destino.nombre}” de la aplicación? Sus datos se conservarán en la base de datos.`)) return;
     setError(''); setNotice('');
     try {
       await destinosService.delete(destino.id);
-      setNotice('Destino eliminado.');
+      setNotice('Destino quitado de la aplicación. Sus datos se conservaron en la base de datos.');
       await loadData();
     } catch (err: unknown) {
-      setError(getApiErrorBody(err)?.error || 'No se pudo eliminar el destino.');
+      setError(getApiErrorBody(err)?.error || 'No se pudo quitar el destino de la aplicación.');
     }
   };
 
@@ -104,13 +119,7 @@ const AdminDashboard: React.FC = () => {
       <IonHeader>
         <IonToolbar>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 24px' }}>
-            <span className="brand-badge" aria-hidden="true">▲</span>
-            <div>
-              <strong style={{ display: 'block', color: '#0F172A', fontSize: 18, lineHeight: 1.2 }}>
-                Senderia <span style={{ color: '#64748B', fontWeight: 400 }}>Chile</span>
-              </strong>
-              <span style={{ display: 'block', color: '#64748B', fontSize: 12 }}>Panel de admin</span>
-            </div>
+            <BrandLink subtitle="Panel de admin" />
           </div>
         </IonToolbar>
       </IonHeader>
@@ -118,7 +127,7 @@ const AdminDashboard: React.FC = () => {
         <div className="admin-layout">
           <aside className="admin-sidebar">
             <button className="admin-nav-item" onClick={() => navigate('/explorar')}>Volver a la aplicación ↗</button>
-            <button className="admin-nav-item" onClick={() => { logout(); navigate('/login'); }}>Cerrar sesión</button>
+            <button className="admin-nav-item" onClick={() => { logout(); window.location.replace('/login'); }}>Cerrar sesión</button>
           </aside>
           <main className="admin-main">
             <div className="admin-header-row"><div><h1>Destinos turísticos</h1><p>Los cambios se guardan en PostgreSQL.</p></div><button onClick={() => { resetForm(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Nuevo destino</button></div>
@@ -130,16 +139,17 @@ const AdminDashboard: React.FC = () => {
                 <label>Nombre<input required minLength={2} maxLength={255} value={form.nombre} onChange={(e) => updateField('nombre', e.target.value)} /></label>
                 <label>Categoría<select required value={form.categoria_id} onChange={(e) => updateField('categoria_id', e.target.value)}><option value="">Selecciona una categoría</option>{categorias.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}</select></label>
                 <label>Región<select required value={form.region_id} onChange={(e) => updateField('region_id', e.target.value)}><option value="">Selecciona una región</option>{regiones.map((r) => <option key={r.id} value={r.id}>{r.nombre}</option>)}</select></label>
-                <label>Latitud<input required type="number" step="any" min="-90" max="90" value={form.latitud} onChange={(e) => updateField('latitud', e.target.value)} /></label>
-                <label>Longitud<input required type="number" step="any" min="-180" max="180" value={form.longitud} onChange={(e) => updateField('longitud', e.target.value)} /></label>
+                <label>Latitud (opcional)<input type="number" step="any" min="-90" max="90" placeholder="Ej. -33.42613" value={form.latitud} onChange={(e) => updateField('latitud', e.target.value)} /></label>
+                <label>Longitud (opcional)<input type="number" step="any" min="-180" max="180" placeholder="Ej. -70.43477" value={form.longitud} onChange={(e) => updateField('longitud', e.target.value)} /></label>
                 <label>Horario<input maxLength={255} value={form.horario} onChange={(e) => updateField('horario', e.target.value)} /></label>
                 <label>Imagen (URL)<input type="url" maxLength={500} value={form.imagen_url} onChange={(e) => updateField('imagen_url', e.target.value)} /></label>
                 <label>Descripción<textarea value={form.descripcion} onChange={(e) => updateField('descripcion', e.target.value)} /></label>
                 <label>Condiciones de acceso<textarea value={form.condiciones_acceso} onChange={(e) => updateField('condiciones_acceso', e.target.value)} /></label>
+                <p className="admin-form-help">Completa ambas coordenadas si las conoces. Si las dejas vacías, Sendería las buscará con Geoapify usando el nombre y la región seleccionada; para eso se requiere GEOAPIFY_API_KEY en backend/.env. Si la búsqueda no encuentra el lugar, podrás ingresar las coordenadas manualmente.</p>
                 <div><button type="submit" disabled={saving || loading}>{saving ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear destino'}</button>{editingId && <button type="button" onClick={resetForm}>Cancelar</button>}</div>
               </form>
             </section>
-            <section className="admin-table-card"><h2>Destinos ({destinos.length})</h2>{loading ? <IonSpinner /> : destinos.length === 0 ? <p>No hay destinos en la base de datos. Ejecuta el seed para cargar ejemplos.</p> : <div style={{ overflowX: 'auto' }}><table className="admin-table"><thead><tr><th>Nombre</th><th>Categoría</th><th>Región</th><th>Acciones</th></tr></thead><tbody>{destinos.map((destino) => <tr key={destino.id}><td>{destino.nombre}</td><td>{destino.categoria_nombre}</td><td>{destino.region_nombre}</td><td><button onClick={() => navigate(`/destinos/${destino.id}`)}>Ver</button> <button onClick={() => editDestino(destino)}>Editar</button> <button onClick={() => void deleteDestino(destino)}>Eliminar</button></td></tr>)}</tbody></table></div>}</section>
+            <section className="admin-table-card"><h2>Destinos activos ({destinos.length})</h2>{loading ? <IonSpinner /> : destinos.length === 0 ? <p>No hay destinos activos en la aplicación.</p> : <div style={{ overflowX: 'auto' }}><table className="admin-table"><thead><tr><th>Nombre</th><th>Categoría</th><th>Región</th><th>Acciones</th></tr></thead><tbody>{destinos.map((destino) => <tr key={destino.id}><td>{destino.nombre}</td><td>{destino.categoria_nombre}</td><td>{destino.region_nombre}</td><td><button onClick={() => navigate(`/destinos/${destino.id}`)}>Ver</button> <button onClick={() => editDestino(destino)}>Editar</button> <button onClick={() => void deleteDestino(destino)}>Eliminar</button></td></tr>)}</tbody></table></div>}</section>
           </main>
         </div>
       </IonContent>
