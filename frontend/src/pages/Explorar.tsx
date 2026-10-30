@@ -1,16 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, lazy, useCallback, useState } from 'react';
 import {
-  IonPage, IonHeader, IonToolbar, IonContent, IonSpinner
+  IonPage, IonHeader, IonToolbar, IonContent, IonSpinner, useIonViewWillEnter
 } from '@ionic/react';
 import { useAuth } from '../context/useAuth';
 import { destinosService } from '../services/api';
 import { getApiErrorBody } from '../services/apiError';
+import { useNavigate } from 'react-router-dom';
+import BrandLink from '../components/BrandLink';
+
+const MapaDestinos = lazy(() => import('../components/MapaDestinos'));
 
 interface Destino {
   id: number;
   nombre: string;
   categoria_nombre: string;
   region_nombre: string;
+  latitud: number;
+  longitud: number;
   imagen_url: string | null;
   condiciones_acceso?: string | null;
 }
@@ -20,24 +26,24 @@ const Explorar: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const { isAuthenticated, isAdmin, logout, user } = useAuth();
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchDestinos = async () => {
-      try {
-        const response = await destinosService.getAll();
-        if (response.data?.destinos && response.data.destinos.length > 0) {
-          setDestinos(response.data.destinos);
-        } else {
-          setDestinos([]);
-        }
-      } catch (err: unknown) {
-        setError(getApiErrorBody(err)?.error || 'No se pudo conectar con la API. Comprueba que PostgreSQL y el backend estén activos.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchDestinos();
+  const fetchDestinos = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await destinosService.getAll();
+      setDestinos(response.data?.destinos || []);
+    } catch (err: unknown) {
+      setError(getApiErrorBody(err)?.error || 'No se pudo conectar con la API. Comprueba que PostgreSQL y el backend estén activos.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useIonViewWillEnter(() => {
+    void fetchDestinos();
+  }, [fetchDestinos]);
 
   const [busqueda, setBusqueda] = useState('');
   const [categoriaFiltro, setCategoriaFiltro] = useState('Todos');
@@ -50,10 +56,9 @@ const Explorar: React.FC = () => {
       .replace(/[\u0300-\u036f]/g, '')
       .toLowerCase();
 
-    return (
-      /\b(se requiere|requiere|es obligatoria|es obligatorio|obligatoria|obligatorio)\b.{0,40}\breserva\b/.test(normalized) ||
-      /\breserva\b.{0,40}\b(obligatoria|obligatorio|requerida|requerido)\b/.test(normalized)
-    );
+    const explicitlyOptional = /\b(?:no\s+(?:se\s+)?(?:requiere|necesita|exige|solicita)|no\s+(?:es\s+)?(?:necesaria|necesario|obligatoria|obligatorio)|sin(?:\s+necesidad\s+de)?)\b.{0,40}\breserv(?:a|as|ar|acion|aciones)\b/.test(normalized)
+      || /\breserv(?:a|as|ar|acion|aciones)\b.{0,30}\bno\s+(?:es\s+)?(?:necesaria|necesario|obligatoria|obligatorio|requerida|requerido)\b/.test(normalized);
+    return !explicitlyOptional && /\breserv(?:a|as|ar|acion|aciones)\b/.test(normalized);
   };
 
   const matchCategoryName = (catNombre: string, filtro: string): boolean => {
@@ -85,12 +90,7 @@ const Explorar: React.FC = () => {
         <IonToolbar className="senderia-navbar">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', height: '64px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => window.location.href = '/explorar'}>
-                <span className="brand-badge">▲</span>
-                <span style={{ fontWeight: 700, fontSize: '18px', color: '#0F172A' }}>
-                  Senderia <span style={{ color: '#64748B', fontWeight: 400 }}>Chile</span>
-                </span>
-              </div>
+              <BrandLink />
 
               {isAdmin && (
                 <span
@@ -122,15 +122,15 @@ const Explorar: React.FC = () => {
                   </span>
                   {isAdmin && (
                     <button
-                      onClick={() => window.location.href = '/admin/dashboard'}
+                      onClick={() => navigate('/admin/dashboard')}
                       style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #CBD5E1', background: '#fff', color: '#0F172A', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
                     >
                       Admin
                     </button>
                   )}
-                  <button onClick={() => window.location.href = '/favoritos'} style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #CBD5E1', background: '#fff', color: '#0F172A', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>♡ Favoritos</button>
+                  <button onClick={() => navigate('/favoritos')} style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #CBD5E1', background: '#fff', color: '#0F172A', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>♡ Favoritos</button>
                   <button
-                    onClick={logout}
+                    onClick={() => { logout(); window.location.replace('/login'); }}
                     style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#64748B', fontSize: '12px', cursor: 'pointer' }}
                   >
                     Cerrar sesión
@@ -139,13 +139,13 @@ const Explorar: React.FC = () => {
               ) : (
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <button
-                    onClick={() => window.location.href = '/login'}
+                    onClick={() => navigate('/login')}
                     style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #0F172A', background: '#0F172A', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
                   >
                     Iniciar Sesión
                   </button>
                   <button
-                    onClick={() => window.location.href = '/registro'}
+                    onClick={() => navigate('/registro')}
                     style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #CBD5E1', background: '#fff', color: '#0F172A', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
                   >
                     Registrarse
@@ -202,13 +202,42 @@ const Explorar: React.FC = () => {
             </div>
           )}
 
+          {!loading && !error && destinosFiltrados.length > 0 && (
+            <section className="destination-map-section" aria-labelledby="explore-map-title">
+              <div className="destination-map-heading">
+                <div>
+                  <h2 id="explore-map-title">Mapa de destinos</h2>
+                  <p>Los marcadores corresponden a los destinos visibles según tu búsqueda y filtros.</p>
+                </div>
+                <span className="destination-map-coordinates">
+                  {destinosFiltrados.length} {destinosFiltrados.length === 1 ? 'destino' : 'destinos'}
+                </span>
+              </div>
+              <Suspense fallback={<div className="destination-map-loading">Cargando mapa…</div>}>
+                <MapaDestinos
+                  destinos={destinosFiltrados.map((destino) => ({
+                    id: destino.id,
+                    nombre: destino.nombre,
+                    region_nombre: destino.region_nombre,
+                    categoria_nombre: destino.categoria_nombre,
+                    latitud: Number(destino.latitud),
+                    longitud: Number(destino.longitud),
+                  }))}
+                  onOpenDestination={(destinationId) => navigate(`/destinos/${destinationId}`)}
+                  scrollWheelZoom
+                  footerText="Selecciona un marcador para ver el destino. Los datos provienen de Sendería y las calles del mapa de OpenStreetMap."
+                />
+              </Suspense>
+            </section>
+          )}
+
           {!loading && !error && (
             <div className="destinos-grid">
               {destinosFiltrados.map((destino) => (
                 <div
                   key={destino.id}
                   className="destino-card"
-                  onClick={() => window.location.href = `/destinos/${destino.id}`}
+                  onClick={() => navigate(`/destinos/${destino.id}`)}
                 >
                   <div className="destino-img-wrap">
                     <img
