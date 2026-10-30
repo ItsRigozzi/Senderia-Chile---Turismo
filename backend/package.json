@@ -8,6 +8,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "admin:create": "tsx src/index.ts --create-admin",
+    "sernatur:enriquecer": "tsx src/scripts/enrichSernaturFromWikipedia.ts",
     "test": "npm run build && node --test test/validation.test.mjs",
     "test:api": "node --test test/api.integration.test.mjs"
   },
