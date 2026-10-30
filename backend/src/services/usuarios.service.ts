@@ -31,13 +31,15 @@ export async function deleteUsuario(id: number) {
 
 export async function configureAdmin(nombre: string, email: string, password: string) {
   const passwordHash = await bcrypt.hash(password, 12);
+  const normalizedEmail = email.trim().toLowerCase();
   const result = await pool.query(
     `INSERT INTO usuarios (nombre, email, password_hash, rol)
      VALUES ($1, $2, $3, 'admin')
-     ON CONFLICT (email) DO UPDATE
-     SET nombre = EXCLUDED.nombre, password_hash = EXCLUDED.password_hash, rol = 'admin'
+     ON CONFLICT ((lower(btrim(email)))) DO UPDATE
+     SET nombre = EXCLUDED.nombre, email = EXCLUDED.email,
+         password_hash = EXCLUDED.password_hash, rol = 'admin'
      RETURNING id, nombre, email, rol`,
-    [nombre, email, passwordHash],
+    [nombre, normalizedEmail, passwordHash],
   );
   return result.rows[0];
 }

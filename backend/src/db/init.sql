@@ -28,6 +28,23 @@ CREATE TABLE IF NOT EXISTS usuarios (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Los correos no distinguen mayúsculas/minúsculas y se guardan normalizados
+-- desde el backend. Esta restricción también protege las cuentas ya existentes.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM usuarios
+    GROUP BY lower(btrim(email))
+    HAVING COUNT(*) > 1
+  ) THEN
+    RAISE EXCEPTION 'Hay correos duplicados al ignorar mayúsculas/minúsculas; resuélvelos antes de aplicar el índice.';
+  END IF;
+END $$;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_usuarios_email_normalizado
+  ON usuarios (lower(btrim(email)));
+
 -- Tabla de destinos turísticos
 CREATE TABLE IF NOT EXISTS destinos (
   id SERIAL PRIMARY KEY,
@@ -40,9 +57,15 @@ CREATE TABLE IF NOT EXISTS destinos (
   horario VARCHAR(255),
   condiciones_acceso TEXT,
   imagen_url VARCHAR(500),
+  activo BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- En bases existentes, conserva los destinos y añade un estado para ocultarlos
+-- sin borrar sus datos ni los favoritos asociados.
+ALTER TABLE public.destinos
+  ADD COLUMN IF NOT EXISTS activo BOOLEAN NOT NULL DEFAULT TRUE;
 
 -- Añade las restricciones también a bases existentes creadas por versiones previas del script.
 DO $$

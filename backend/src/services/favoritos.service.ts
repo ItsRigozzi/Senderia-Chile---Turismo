@@ -8,7 +8,7 @@ export async function listFavoritos(userId: number) {
      JOIN destinos d ON f.destino_id = d.id
      JOIN categorias c ON d.categoria_id = c.id
      JOIN regiones r ON d.region_id = r.id
-     WHERE f.usuario_id = $1
+     WHERE f.usuario_id = $1 AND d.activo = TRUE
      ORDER BY f.created_at DESC`,
     [userId],
   );
@@ -16,7 +16,7 @@ export async function listFavoritos(userId: number) {
 }
 
 export async function addFavorito(userId: number, destinationId: number) {
-  const destination = await pool.query('SELECT id FROM destinos WHERE id = $1', [destinationId]);
+  const destination = await pool.query('SELECT id FROM destinos WHERE id = $1 AND activo = TRUE', [destinationId]);
   if (destination.rows.length === 0) return { status: 'destination-missing' as const };
 
   const result = await pool.query(

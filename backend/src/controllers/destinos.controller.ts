@@ -1,7 +1,43 @@
 import { Request, Response } from 'express';
 import { destinoSchema, destinoUpdateSchema, idParamSchema } from '../validators/schemas.js';
 import * as destinosService from '../services/destinos.service.js';
+import type { PersistedDestinoUpdate } from '../services/destinos.service.js';
+import { GeocodingError, geocodeDestination } from '../services/geocoding.service.js';
 import { hasPostgresCode } from './databaseErrors.js';
+
+const resolveCoordinates = async (
+  nombre: string,
+  regionId: number,
+  res: Response,
+): Promise<{ latitud: number; longitud: number } | null> => {
+  const region = await destinosService.findRegionNameById(regionId);
+  if (!region) {
+    res.status(400).json({ error: 'La región indicada no existe.' });
+    return null;
+  }
+
+  try {
+    const coordinates = await geocodeDestination(nombre, region);
+    if (!coordinates) {
+      res.status(422).json({
+        error: `No se encontraron coordenadas en Chile para “${nombre}” en la región ${region}. Ingresa ambas coordenadas manualmente.`,
+      });
+      return null;
+    }
+    return coordinates;
+  } catch (error) {
+    if (error instanceof GeocodingError && error.code === 'not_configured') {
+      res.status(503).json({ error: error.message });
+      return null;
+    }
+    const message = error instanceof GeocodingError
+      ? error.message
+      : 'No se pudo consultar el servicio de geocodificación.';
+    console.error('Error de geocodificación:', message);
+    res.status(502).json({ error: message });
+    return null;
+  }
+};
 
 export const getDestinos = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -46,7 +82,12 @@ export const createDestino = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const destino = await destinosService.createDestino(parsed.data);
+    const coordinates = typeof parsed.data.latitud === 'number' && typeof parsed.data.longitud === 'number'
+      ? { latitud: parsed.data.latitud, longitud: parsed.data.longitud }
+      : await resolveCoordinates(parsed.data.nombre, parsed.data.region_id, res);
+    if (!coordinates) return;
+
+    const destino = await destinosService.createDestino({ ...parsed.data, ...coordinates });
     res.status(201).json({ mensaje: 'Destino creado exitosamente', destino });
   } catch (err) {
     if (hasPostgresCode(err, '23505')) {
@@ -79,7 +120,24 @@ export const updateDestino = async (req: Request, res: Response): Promise<void> 
       res.status(400).json({ error: 'No se proporcionaron campos para actualizar' });
       return;
     }
-    const destino = await destinosService.updateDestino(parsedId.data, parsed.data);
+    const { latitud, longitud, ...otherFields } = parsed.data;
+    let updateFields: PersistedDestinoUpdate = otherFields;
+    if (latitud === null && longitud === null) {
+      const current = await destinosService.findDestinoById(parsedId.data);
+      if (!current) {
+        res.status(404).json({ error: 'Destino no encontrado' });
+        return;
+      }
+      const nombre = parsed.data.nombre ?? current.nombre;
+      const regionId = parsed.data.region_id ?? current.region_id;
+      const coordinates = await resolveCoordinates(nombre, regionId, res);
+      if (!coordinates) return;
+      updateFields = { ...otherFields, ...coordinates };
+    } else if (typeof latitud === 'number' && typeof longitud === 'number') {
+      updateFields = { ...otherFields, latitud, longitud };
+    }
+
+    const destino = await destinosService.updateDestino(parsedId.data, updateFields);
     if (!destino) {
       res.status(404).json({ error: 'Destino no encontrado' });
       return;
@@ -111,7 +169,7 @@ export const deleteDestino = async (req: Request, res: Response): Promise<void> 
       res.status(404).json({ error: 'Destino no encontrado' });
       return;
     }
-    res.json({ mensaje: 'Destino eliminado exitosamente', destino });
+    res.json({ mensaje: 'Destino quitado de la aplicación. El registro se conserva en la base de datos.', destino });
   } catch (err) {
     console.error('Error al eliminar destino:', err instanceof Error ? err.message : err);
     res.status(503).json({ error: 'No se pudo escribir en PostgreSQL' });

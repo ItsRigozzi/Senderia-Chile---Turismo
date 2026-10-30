@@ -18,14 +18,14 @@ export async function createTouristAccount(
     `INSERT INTO usuarios (nombre, email, password_hash, rol)
      VALUES ($1, $2, $3, 'turista')
      RETURNING id, nombre, email, rol, created_at`,
-    [nombre, email, passwordHash],
+    [nombre, email.trim().toLowerCase(), passwordHash],
   );
   return result.rows[0];
 }
 
 export async function findAccountByEmail(email: string): Promise<AuthAccount | undefined> {
   const result = await pool.query<AuthAccount>(
-    'SELECT id, nombre, email, password_hash, rol FROM usuarios WHERE email = $1',
+    'SELECT id, nombre, email, password_hash, rol FROM usuarios WHERE lower(btrim(email)) = $1',
     [email],
   );
   return result.rows[0];
