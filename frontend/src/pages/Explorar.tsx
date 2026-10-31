@@ -1,12 +1,16 @@
-import React, { Suspense, lazy, useCallback, useState } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import {
-  IonPage, IonHeader, IonToolbar, IonContent, IonSpinner, useIonViewWillEnter
+  IonPage, IonHeader, IonToolbar, IonContent, IonSpinner, IonModal, IonTitle, IonButtons, IonButton, IonFooter,
+  useIonViewWillEnter
 } from '@ionic/react';
 import { useAuth } from '../context/useAuth';
-import { destinosService } from '../services/api';
+import { categoriasService, destinosService } from '../services/api';
+import type { Categoria, DestinoFiltros, Region } from '../services/api';
 import { getApiErrorBody } from '../services/apiError';
 import { useNavigate } from 'react-router-dom';
 import BrandLink from '../components/BrandLink';
+import FiltrosDestinos from '../components/FiltrosDestinos';
+import type { FiltroDestino } from '../components/FiltrosDestinos';
 
 const MapaDestinos = lazy(() => import('../components/MapaDestinos'));
 
@@ -25,30 +29,77 @@ const Explorar: React.FC = () => {
   const [destinos, setDestinos] = useState<Destino[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [filtros, setFiltros] = useState<DestinoFiltros>({ categoria: [], region: [] });
+  const [opcionesCategorias, setOpcionesCategorias] = useState<Categoria[]>([]);
+  const [opcionesRegiones, setOpcionesRegiones] = useState<Region[]>([]);
+  const [errorOpciones, setErrorOpciones] = useState('');
+  const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
+  const ultimaPeticion = useRef(0);
+  const filtrosIniciales = useRef(true);
   const { isAuthenticated, isAdmin, logout, user } = useAuth();
   const navigate = useNavigate();
 
   const fetchDestinos = useCallback(async () => {
+    // Si el usuario cambia los filtros rápido, solo se aplica la respuesta de la última petición.
+    const peticion = ++ultimaPeticion.current;
     setLoading(true);
     setError('');
     try {
-      const response = await destinosService.getAll();
-      setDestinos(response.data?.destinos || []);
+      const response = await destinosService.getAll(filtros);
+      if (peticion !== ultimaPeticion.current) return;
+      const data: { destinos?: Destino[] } = response.data;
+      setDestinos(data?.destinos || []);
     } catch (err: unknown) {
+      if (peticion !== ultimaPeticion.current) return;
       setError(getApiErrorBody(err)?.error || 'No se pudo conectar con la API. Comprueba que PostgreSQL y el backend estén activos.');
     } finally {
-      setLoading(false);
+      if (peticion === ultimaPeticion.current) setLoading(false);
+    }
+  }, [filtros]);
+
+  const fetchOpcionesFiltros = useCallback(async () => {
+    try {
+      const [categoriasResponse, regionesResponse] = await Promise.all([
+        categoriasService.getAll(), categoriasService.getRegiones(),
+      ]);
+      setOpcionesCategorias(categoriasResponse.data.categorias || []);
+      setOpcionesRegiones(regionesResponse.data.regiones || []);
+      setErrorOpciones('');
+    } catch {
+      setErrorOpciones('No se pudieron cargar los filtros. Intenta nuevamente en unos minutos.');
     }
   }, []);
 
   useIonViewWillEnter(() => {
     void fetchDestinos();
+    void fetchOpcionesFiltros();
+  }, [fetchDestinos, fetchOpcionesFiltros]);
+
+  // La carga inicial la hace useIonViewWillEnter; aquí solo se vuelve a consultar al cambiar los filtros.
+  useEffect(() => {
+    if (filtrosIniciales.current) {
+      filtrosIniciales.current = false;
+      return;
+    }
+    void fetchDestinos();
   }, [fetchDestinos]);
+
+  const toggleFiltro = (filtro: FiltroDestino, slug: string) => {
+    setFiltros((actual) => ({
+      ...actual,
+      [filtro]: actual[filtro].includes(slug)
+        ? actual[filtro].filter((valor) => valor !== slug)
+        : [...actual[filtro], slug],
+    }));
+  };
+
+  const limpiarFiltros = () => setFiltros({ categoria: [], region: [] });
+  const filtrosActivos = filtros.categoria.length + filtros.region.length;
 
   const [busqueda, setBusqueda] = useState('');
   const [categoriaFiltro, setCategoriaFiltro] = useState('Todos');
 
-  const categorias = ['Todos', 'Parques Nac.', 'Requiere reserva previa', 'Montañas', 'Desierto'];
+  const categorias = ['Todos', 'Requiere reserva previa'];
 
   const requiresAdvanceReservation = (conditions?: string | null): boolean => {
     const normalized = (conditions || '')
@@ -61,15 +112,6 @@ const Explorar: React.FC = () => {
     return !explicitlyOptional && /\breserv(?:a|as|ar|acion|aciones)\b/.test(normalized);
   };
 
-  const matchCategoryName = (catNombre: string, filtro: string): boolean => {
-    if (filtro === 'Todos') return true;
-    const cat = catNombre.toLowerCase();
-    if (filtro === 'Montañas') return cat.includes('montaña') || cat.includes('cerro') || cat.includes('senderismo') || cat.includes('trekking');
-    if (filtro === 'Parques Nac.') return cat.includes('parque');
-    if (filtro === 'Desierto') return cat.includes('desierto');
-    return cat.includes(filtro.toLowerCase());
-  };
-
   const destinosFiltrados = destinos.filter((d) => {
     const term = busqueda.toLowerCase().trim();
     const matchBusqueda = !term ||
@@ -80,9 +122,23 @@ const Explorar: React.FC = () => {
 
     const matchCategoria = categoriaFiltro === 'Requiere reserva previa'
       ? requiresAdvanceReservation(d.condiciones_acceso)
-      : matchCategoryName(d.categoria_nombre, categoriaFiltro);
+      : true;
     return matchBusqueda && matchCategoria;
   });
+
+  // Mientras se recarga por un cambio de filtros se mantienen visibles los resultados anteriores.
+  const mostrarResultados = !error && (!loading || destinos.length > 0);
+  const panelFiltros = (
+    <FiltrosDestinos
+      regiones={opcionesRegiones}
+      categorias={opcionesCategorias}
+      seleccion={filtros}
+      activos={filtrosActivos}
+      onToggle={toggleFiltro}
+      onLimpiar={limpiarFiltros}
+      error={errorOpciones}
+    />
+  );
 
   return (
     <IonPage>
@@ -181,97 +237,147 @@ const Explorar: React.FC = () => {
                 </button>
               ))}
             </div>
+
+            <button type="button" className="explorar-filtros-boton" onClick={() => setFiltrosAbiertos(true)}>
+              Filtros{filtrosActivos > 0 && <span className="filtros-destinos-grupo-contador">{filtrosActivos}</span>}
+            </button>
           </div>
 
-          {loading && (
-            <div style={{ textAlign: 'center', padding: '60px 0' }}>
-              <IonSpinner name="crescent" />
-              <p style={{ marginTop: '12px', color: '#64748B', fontSize: '14px' }}>Cargando destinos turísticos...</p>
-            </div>
-          )}
+          <div className="explorar-cuerpo">
+            <aside className="explorar-filtros-sidebar" aria-label="Filtros de destinos">
+              {panelFiltros}
+            </aside>
 
-          {error && (
-            <div style={{ background: '#FEE2E2', border: '1px solid #FCA5A5', color: '#B91C1C', padding: '12px 16px', borderRadius: 8, margin: '16px 0' }}>
-              {isAdmin ? error : 'No se pudieron cargar los destinos. Intenta nuevamente en unos minutos.'}
-            </div>
-          )}
+            <div className="explorar-resultados">
+              {loading && destinos.length > 0 && (
+                <p className="explorar-actualizando" role="status">Actualizando resultados…</p>
+              )}
 
-          {!loading && !error && destinosFiltrados.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '60px 0', background: '#fff', borderRadius: 12, border: '1px solid #E2E8F0' }}>
-              <p style={{ color: '#64748B', fontSize: '15px' }}>No se encontraron destinos que coincidan con tu búsqueda.</p>
-            </div>
-          )}
-
-          {!loading && !error && destinosFiltrados.length > 0 && (
-            <section className="destination-map-section" aria-labelledby="explore-map-title">
-              <div className="destination-map-heading">
-                <div>
-                  <h2 id="explore-map-title">Mapa de destinos</h2>
-                  <p>Los marcadores corresponden a los destinos visibles según tu búsqueda y filtros.</p>
+              {loading && destinos.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                  <IonSpinner name="crescent" />
+                  <p style={{ marginTop: '12px', color: '#64748B', fontSize: '14px' }}>Cargando destinos turísticos...</p>
                 </div>
-                <span className="destination-map-coordinates">
-                  {destinosFiltrados.length} {destinosFiltrados.length === 1 ? 'destino' : 'destinos'}
-                </span>
-              </div>
-              <Suspense fallback={<div className="destination-map-loading">Cargando mapa…</div>}>
-                <MapaDestinos
-                  destinos={destinosFiltrados.map((destino) => ({
-                    id: destino.id,
-                    nombre: destino.nombre,
-                    region_nombre: destino.region_nombre,
-                    categoria_nombre: destino.categoria_nombre,
-                    latitud: Number(destino.latitud),
-                    longitud: Number(destino.longitud),
-                  }))}
-                  onOpenDestination={(destinationId) => navigate(`/destinos/${destinationId}`)}
-                  scrollWheelZoom
-                  footerText="Selecciona un marcador para ver el destino. Los datos provienen de Sendería y las calles del mapa de OpenStreetMap."
-                />
-              </Suspense>
-            </section>
-          )}
+              )}
 
-          {!loading && !error && (
-            <div className="destinos-grid">
-              {destinosFiltrados.map((destino) => (
-                <div
-                  key={destino.id}
-                  className="destino-card"
-                  onClick={() => navigate(`/destinos/${destino.id}`)}
-                >
-                  <div className="destino-img-wrap">
-                    <img
-                      src={destino.imagen_url || '/images/destinos/sin-imagen.svg'}
-                      alt={destino.nombre}
-                      loading="lazy"
-                      onError={(e) => {
-                        if (!e.currentTarget.src.endsWith('/sin-imagen.svg')) {
-                          e.currentTarget.src = '/images/destinos/sin-imagen.svg';
-                        }
-                      }}
-                    />
-                    <span className="destino-badge-top">{destino.categoria_nombre}</span>
-                  </div>
+              {error && (
+                <div style={{ background: '#FEE2E2', border: '1px solid #FCA5A5', color: '#B91C1C', padding: '12px 16px', borderRadius: 8, margin: '16px 0' }}>
+                  {isAdmin ? error : 'No se pudieron cargar los destinos. Intenta nuevamente en unos minutos.'}
+                </div>
+              )}
 
-                  <div className="destino-card-body">
-                    <span className="destino-region">{destino.region_nombre}</span>
-                    <h3 className="destino-nombre">{destino.nombre}</h3>
+              {!loading && !error && destinosFiltrados.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '60px 0', background: '#fff', borderRadius: 12, border: '1px solid #E2E8F0' }}>
+                  <p style={{ color: '#64748B', fontSize: '15px' }}>No se encontraron destinos que coincidan con tu búsqueda y filtros.</p>
+                  <p style={{ color: '#64748B', fontSize: '14px' }}>Prueba quitando algún filtro o cambiando el texto de búsqueda.</p>
+                  {filtrosActivos > 0 && (
+                    <button type="button" className="filtros-destinos-limpiar" onClick={limpiarFiltros}>
+                      Limpiar filtros
+                    </button>
+                  )}
+                </div>
+              )}
 
-                    <div className="destino-card-footer">
-                      <span style={{ fontSize: '12px', color: '#F59E0B', fontWeight: 600 }}>
-                        ★ 4.8 <span style={{ color: '#94A3B8', fontWeight: 400 }}>(Opiniones)</span>
-                      </span>
-                      <span style={{ fontSize: '13px', fontWeight: 600, color: '#2563EB' }}>
-                        Ver detalles →
-                      </span>
+              {mostrarResultados && destinosFiltrados.length > 0 && (
+                <section className="destination-map-section" aria-labelledby="explore-map-title">
+                  <div className="destination-map-heading">
+                    <div>
+                      <h2 id="explore-map-title">Mapa de destinos</h2>
+                      <p>Los marcadores corresponden a los destinos visibles según tu búsqueda y filtros.</p>
                     </div>
+                    <span className="destination-map-coordinates">
+                      {destinosFiltrados.length} {destinosFiltrados.length === 1 ? 'destino' : 'destinos'}
+                    </span>
                   </div>
+                  <Suspense fallback={<div className="destination-map-loading">Cargando mapa…</div>}>
+                    <MapaDestinos
+                      destinos={destinosFiltrados.map((destino) => ({
+                        id: destino.id,
+                        nombre: destino.nombre,
+                        region_nombre: destino.region_nombre,
+                        categoria_nombre: destino.categoria_nombre,
+                        latitud: Number(destino.latitud),
+                        longitud: Number(destino.longitud),
+                      }))}
+                      onOpenDestination={(destinationId) => navigate(`/destinos/${destinationId}`)}
+                      scrollWheelZoom
+                      footerText="Selecciona un marcador para ver el destino. Los datos provienen de Sendería y las calles del mapa de OpenStreetMap."
+                    />
+                  </Suspense>
+                </section>
+              )}
+
+              {mostrarResultados && (
+                <div className="destinos-grid">
+                  {destinosFiltrados.map((destino) => (
+                    <div
+                      key={destino.id}
+                      className="destino-card"
+                      onClick={() => navigate(`/destinos/${destino.id}`)}
+                    >
+                      <div className="destino-img-wrap">
+                        <img
+                          src={destino.imagen_url || '/images/destinos/sin-imagen.svg'}
+                          alt={destino.nombre}
+                          loading="lazy"
+                          onError={(e) => {
+                            if (!e.currentTarget.src.endsWith('/sin-imagen.svg')) {
+                              e.currentTarget.src = '/images/destinos/sin-imagen.svg';
+                            }
+                          }}
+                        />
+                        <span className="destino-badge-top">{destino.categoria_nombre}</span>
+                      </div>
+
+                      <div className="destino-card-body">
+                        <span className="destino-region">{destino.region_nombre}</span>
+                        <h3 className="destino-nombre">{destino.nombre}</h3>
+
+                        <div className="destino-card-footer">
+                          <span style={{ fontSize: '12px', color: '#F59E0B', fontWeight: 600 }}>
+                            ★ 4.8 <span style={{ color: '#94A3B8', fontWeight: 400 }}>(Opiniones)</span>
+                          </span>
+                          <span style={{ fontSize: '13px', fontWeight: 600, color: '#2563EB' }}>
+                            Ver detalles →
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          )}
+          </div>
         </div>
       </IonContent>
+
+      <IonModal
+        className="explorar-filtros-modal"
+        isOpen={filtrosAbiertos}
+        onDidDismiss={() => setFiltrosAbiertos(false)}
+        breakpoints={[0, 0.75, 1]}
+        initialBreakpoint={0.75}
+        expandToScroll={false}
+      >
+        <IonHeader>
+          <IonToolbar>
+            <IonTitle>Filtrar destinos</IonTitle>
+            <IonButtons slot="end">
+              <IonButton onClick={() => setFiltrosAbiertos(false)}>Cerrar</IonButton>
+            </IonButtons>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent className="ion-padding">
+          {panelFiltros}
+        </IonContent>
+        <IonFooter>
+          <IonToolbar>
+            <IonButton expand="block" onClick={() => setFiltrosAbiertos(false)}>
+              {loading ? 'Ver resultados' : `Ver ${destinosFiltrados.length} ${destinosFiltrados.length === 1 ? 'resultado' : 'resultados'}`}
+            </IonButton>
+          </IonToolbar>
+        </IonFooter>
+      </IonModal>
     </IonPage>
   );
 };
