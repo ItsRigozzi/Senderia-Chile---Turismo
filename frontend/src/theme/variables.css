@@ -943,3 +943,104 @@ body {
     display: none;
   }
 }
+
+/* Variante de FiltrosDestinos para fondos oscuros */
+.filtros-destinos--oscuro .filtros-destinos-titulo {
+  color: #ffffff;
+}
+
+.filtros-destinos--oscuro .filtros-destinos-contador {
+  color: #94A3B8;
+}
+
+.filtros-destinos--oscuro .filtros-destinos-grupo legend {
+  color: #CBD5E1;
+}
+
+.filtros-destinos--oscuro .filtros-destinos-grupo-contador {
+  background: #3B82F6;
+}
+
+.filtros-destinos--oscuro .filtros-destinos-opcion {
+  color: #E2E8F0;
+  --border-color: #64748B;
+  --border-color-checked: #3B82F6;
+  --checkbox-background: transparent;
+  --checkbox-background-checked: #3B82F6;
+  --checkmark-color: #ffffff;
+}
+
+.filtros-destinos--oscuro .filtros-destinos-limpiar {
+  border-color: #334155;
+  background: transparent;
+  color: #E2E8F0;
+}
+
+.filtros-destinos--oscuro .filtros-destinos-limpiar:disabled {
+  color: #64748B;
+}
+
+.filtros-destinos--oscuro .filtros-destinos-error {
+  color: #FCA5A5;
+}
+
+/* Búsqueda y filtros de la tabla de destinos del panel admin */
+.admin-sidebar-filtros {
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #1E293B;
+}
+
+.admin-busqueda {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.admin-busqueda input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid #CBD5E1;
+  border-radius: 8px;
+  background: #F8FAFC;
+  font-size: 14px;
+  outline: none;
+}
+
+.admin-busqueda input:focus {
+  border-color: #0F172A;
+  background: #ffffff;
+}
+
+.admin-busqueda span {
+  color: #64748B;
+  font-size: 13px;
+}
+
+.admin-sin-resultados {
+  padding: 32px 16px;
+  border: 1px dashed #CBD5E1;
+  border-radius: 10px;
+  color: #64748B;
+  text-align: center;
+}
+
+@media (max-width: 700px) {
+  .admin-sidebar-filtros {
+    position: static;
+    max-height: 300px;
+  }
+
+  .admin-sidebar-filtros .filtros-destinos-grupos {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 16px;
+  }
+}

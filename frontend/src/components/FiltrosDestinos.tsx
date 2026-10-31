@@ -17,6 +17,8 @@ interface FiltrosDestinosProps {
   onToggle: (filtro: FiltroDestino, slug: string) => void;
   onLimpiar: () => void;
   error?: string;
+  // 'oscuro' adapta los colores a fondos oscuros, como la barra lateral del panel admin.
+  variante?: 'claro' | 'oscuro';
 }
 
 const GrupoFiltro: React.FC<{
@@ -47,10 +49,10 @@ const GrupoFiltro: React.FC<{
 );
 
 const FiltrosDestinos: React.FC<FiltrosDestinosProps> = ({
-  regiones, categorias, seleccion, activos, onToggle, onLimpiar, error,
+  regiones, categorias, seleccion, activos, onToggle, onLimpiar, error, variante = 'claro',
 }) => {
   return (
-    <div className="filtros-destinos">
+    <div className={`filtros-destinos${variante === 'oscuro' ? ' filtros-destinos--oscuro' : ''}`}>
       <div className="filtros-destinos-header">
         <span className="filtros-destinos-titulo">
           Filtros
@@ -66,10 +68,10 @@ const FiltrosDestinos: React.FC<FiltrosDestinosProps> = ({
       {error ? (
         <p className="filtros-destinos-error">{error}</p>
       ) : (
-        <>
+        <div className="filtros-destinos-grupos">
           <GrupoFiltro titulo="Tipo" filtro="categoria" opciones={categorias} seleccionados={seleccion.categoria} onToggle={onToggle} />
           <GrupoFiltro titulo="Región" filtro="region" opciones={regiones} seleccionados={seleccion.region} onToggle={onToggle} />
-        </>
+        </div>
       )}
     </div>
   );
