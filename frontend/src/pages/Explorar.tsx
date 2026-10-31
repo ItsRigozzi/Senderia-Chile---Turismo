@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import BrandLink from '../components/BrandLink';
 import FiltrosDestinos from '../components/FiltrosDestinos';
 import type { FiltroDestino } from '../components/FiltrosDestinos';
+import { coincideBusquedaDestino } from '../utils/busquedaDestinos';
 
 const MapaDestinos = lazy(() => import('../components/MapaDestinos'));
 
@@ -113,12 +114,7 @@ const Explorar: React.FC = () => {
   };
 
   const destinosFiltrados = destinos.filter((d) => {
-    const term = busqueda.toLowerCase().trim();
-    const matchBusqueda = !term ||
-      d.nombre.toLowerCase().includes(term) ||
-      d.region_nombre.toLowerCase().includes(term) ||
-      d.categoria_nombre.toLowerCase().includes(term) ||
-      (term.includes('montaña') && (d.categoria_nombre.toLowerCase().includes('cerro') || d.categoria_nombre.toLowerCase().includes('senderismo')));
+    const matchBusqueda = coincideBusquedaDestino(d, busqueda);
 
     const matchCategoria = categoriaFiltro === 'Requiere reserva previa'
       ? requiresAdvanceReservation(d.condiciones_acceso)
