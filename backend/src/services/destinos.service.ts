@@ -1,13 +1,15 @@
 import pool from '../config/db.js';
-import type { destinoSchema, destinoUpdateSchema } from '../validators/schemas.js';
+import type { destinoSchema, destinoUpdateSchema, destinosQuerySchema } from '../validators/schemas.js';
 import type { z } from 'zod';
 
 type DestinoInput = z.infer<typeof destinoSchema>;
 type DestinoUpdate = z.infer<typeof destinoUpdateSchema>;
+type DestinoFiltros = z.infer<typeof destinosQuerySchema>;
 type ResolvedDestinoInput = Omit<DestinoInput, 'latitud' | 'longitud'> & { latitud: number; longitud: number };
 export type PersistedDestinoUpdate = Omit<DestinoUpdate, 'latitud' | 'longitud'> & { latitud?: number; longitud?: number };
 
-export async function listDestinos(categoria?: string, region?: string) {
+// Dentro de cada filtro los valores se combinan con OR (ANY) y entre filtros con AND.
+export async function listDestinos({ categoria, region }: DestinoFiltros) {
   let query = `
     SELECT d.*, c.nombre as categoria_nombre, c.slug as categoria_slug,
            r.nombre as region_nombre, r.slug as region_slug
@@ -16,15 +18,15 @@ export async function listDestinos(categoria?: string, region?: string) {
     JOIN regiones r ON d.region_id = r.id
   `;
   const conditions: string[] = ['d.activo = TRUE'];
-  const params: string[] = [];
+  const params: string[][] = [];
 
-  if (categoria) {
+  if (categoria.length > 0) {
     params.push(categoria);
-    conditions.push(`c.slug = $${params.length}`);
+    conditions.push(`c.slug = ANY($${params.length}::text[])`);
   }
-  if (region) {
+  if (region.length > 0) {
     params.push(region);
-    conditions.push(`r.slug = $${params.length}`);
+    conditions.push(`r.slug = ANY($${params.length}::text[])`);
   }
   if (conditions.length > 0) query += ` WHERE ${conditions.join(' AND ')}`;
   query += ' ORDER BY d.nombre ASC';

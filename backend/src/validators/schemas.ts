@@ -57,6 +57,22 @@ const validateCoordinatePair = (
 export const destinoSchema = destinationFieldsSchema.superRefine(validateCoordinatePair);
 export const destinoUpdateSchema = destinationFieldsSchema.partial().superRefine(validateCoordinatePair);
 
+// Filtros del listado: cada parámetro admite uno o varios slugs (?region=a&region=b).
+const filtroSlugsSchema = z.preprocess(
+  (value) => {
+    if (value === undefined) return [];
+    return Array.isArray(value) ? value : [value];
+  },
+  z.array(
+    z.string().max(100).regex(/^[a-z0-9-]+$/, 'Cada filtro debe ser un slug con letras minúsculas, números y guiones'),
+  ).max(20, 'Se permiten como máximo 20 valores por filtro'),
+).transform((slugs) => [...new Set(slugs)]);
+
+export const destinosQuerySchema = z.object({
+  categoria: filtroSlugsSchema,
+  region: filtroSlugsSchema,
+});
+
 // ---- Categorías ----
 export const categoriaSchema = z.object({
   nombre: z.string().min(2).max(100),
