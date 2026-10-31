@@ -46,9 +46,15 @@ export const authService = {
 };
 
 // ---- Destinos ----
+export interface DestinoFiltros {
+  categoria: string[];
+  region: string[];
+}
+
 export const destinosService = {
-  getAll: (params?: { categoria?: string; region?: string }) =>
-    api.get('/destinos', { params }),
+  // Cada filtro se envía repetido (?region=a&region=b); dentro de un filtro el backend aplica OR y entre filtros AND.
+  getAll: (filtros?: Partial<DestinoFiltros>) =>
+    api.get('/destinos', { params: filtros, paramsSerializer: { indexes: null } }),
 
   getById: (id: string | number) =>
     api.get(`/destinos/${id}`),
@@ -64,9 +70,22 @@ export const destinosService = {
 };
 
 // ---- Categorías ----
+export interface Categoria {
+  id: number;
+  nombre: string;
+  slug: string;
+  descripcion: string | null;
+}
+
+export interface Region {
+  id: number;
+  nombre: string;
+  slug: string;
+}
+
 export const categoriasService = {
-  getAll: () => api.get('/categorias'),
-  getRegiones: () => api.get('/categorias/regiones'),
+  getAll: () => api.get<{ categorias: Categoria[] }>('/categorias'),
+  getRegiones: () => api.get<{ regiones: Region[] }>('/categorias/regiones'),
 
   create: (data: { nombre: string; slug: string; descripcion?: string }) =>
     api.post('/categorias', data),
