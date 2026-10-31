@@ -11,6 +11,7 @@
 # production
 **/dist/
 **/coverage/
+/backend/uploads/sugerencias-imagenes/
 
 # environment variables and local secrets
 **/.env

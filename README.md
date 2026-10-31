@@ -3,7 +3,7 @@
 **Asignatura:** INF3245-1 — Ingeniería Web y Móvil  
 **Entrega:** EP2 — Aplicación turística con frontend, API REST, PostgreSQL y autenticación JWT
 
-Sendería Chile es una aplicación web construida con Ionic y React para explorar destinos turísticos de Chile. Las personas pueden buscar destinos, revisar su información y guardar favoritos; el equipo administrador puede mantener el catálogo desde un panel conectado al backend y PostgreSQL.
+Sendería Chile es una aplicación web construida con Ionic y React para explorar destinos turísticos de Chile. Las personas pueden buscar destinos, revisar su información, guardar favoritos y compartir calificaciones y reseñas; el equipo administrador puede mantener el catálogo desde un panel conectado al backend y PostgreSQL.
 
 > Este README describe el estado documentado del proyecto. Las capturas y reportes enlazados muestran ejecuciones concretas; no representan una calificación ni reemplazan la revisión funcional de la versión que se entregue.
 
@@ -21,7 +21,8 @@ Sendería Chile es una aplicación web construida con Ionic y React para explora
 | Crear, editar y quitar destinos desde el panel de administración | `frontend/src/pages/AdminDashboard.tsx`, `/api/destinos` | Implementada; quitar un destino lo oculta y conserva su registro en PostgreSQL |
 | Mapa interactivo de destinos | `frontend/src/components/MapaDestinos.tsx`, `Explorar.tsx`, `DestinoDetalle.tsx` | Implementado con Leaflet y teselas de OpenStreetMap; muestra marcadores de destinos activos que tienen coordenadas |
 | Inicio de sesión con Google, verificación de correo y recuperación por correo | — | No implementados en esta versión |
-| Reseñas y calificaciones guardadas por usuarios | — | No implementadas; las estrellas visibles son contenido demostrativo de la interfaz |
+| Calificar destinos y publicar una reseña opcional | `frontend/src/components/OpinionesDestino.tsx`, `/api/destinos/:id/opiniones` | Implementado para cuentas autenticadas; los promedios se calculan con opiniones almacenadas en PostgreSQL |
+| Sugerir imágenes de destinos | `frontend/src/components/SugerenciasImagenesDestino.tsx`, `/api/destinos/:id/sugerencias-imagenes` | Disponible para cuentas autenticadas; las imágenes quedan privadas hasta que un administrador las aprueba y luego muestran el nombre de quien las aportó |
 
 El catálogo que muestra la aplicación proviene de PostgreSQL y se carga mediante la API propia. `backend/src/db/seed.sql` carga datos iniciales de muestra. `backend/src/db/sernatur_carga_unica.sql` es una carga ampliada opcional con el catálogo SERNATUR y propuestas de enriquecimiento; se ejecuta por separado y no forma parte de la inicialización normal. La aplicación todavía no completa automáticamente fichas desde SERNATUR o Wikipedia. Geoapify puede resolver coordenadas cuando el administrador crea un destino sin ingresarlas, si está configurada `GEOAPIFY_API_KEY`.
 
@@ -84,6 +85,7 @@ Senderia-Chile---Turismo/
 │   └── recorrido-integrado/
 ├── backend/
 │   ├── scripts/                 # Inicialización de PostgreSQL
+│   ├── uploads/                  # Imágenes sugeridas guardadas localmente; excluidas de Git
 │   ├── src/
 │   │   ├── config/              # Conexión a PostgreSQL
 │   │   ├── controllers/         # HTTP y respuestas
@@ -183,6 +185,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\backend\scripts\init-d
 
 El script lee `backend/.env`, comprueba la conexión, crea la base si falta y ejecuta `backend/src/db/init.sql` y `backend/src/db/seed.sql`. El esquema prepara las tablas; el seed carga regiones, categorías y destinos de muestra. La inicialización puede repetirse y no elimina toda la base de datos.
 
+Si ya tienes la base creada y actualizaste el proyecto, detén el backend y ejecuta solo `backend/src/db/init.sql` desde pgAdmin para crear las tablas nuevas de opiniones e imágenes sugeridas: conéctate a `senderia`, abre **Query Tool**, usa **File → Open File**, selecciona ese archivo y presiona **F5**. Espera a que termine y ejecuta `COMMIT;` en la misma pestaña si pgAdmin dejó una transacción abierta. El script conserva los datos existentes y no vuelve a cargar el seed ni el catálogo SERNATUR. Después, vuelve a iniciar el backend.
+
 ### 5.4 Cargar el catálogo SERNATUR ampliado para reproducir los datos de entrega
 
 Después de ejecutar `init-db.ps1`, conéctate en pgAdmin a la base `senderia`, abre **Query Tool**, selecciona **File → Open File**, carga `backend/src/db/sernatur_carga_unica.sql` y presiona **F5** para guardar el catálogo ampliado en PostgreSQL. Espera a que Query Tool confirme que terminó antes de continuar. Esta carga es necesaria para que el profesor vea el catálogo SERNATUR ampliado; si se omite, la aplicación tendrá solo los destinos de muestra incluidos en `seed.sql`.
@@ -247,6 +251,12 @@ Con la base ya inicializada, no repitas `init-db.ps1` ni `admin:create` para cad
 | GET | `/auth/me` | JWT | Consultar la identidad vigente desde PostgreSQL |
 | GET | `/destinos?categoria=<slug>&region=<slug>` | Público | Listar y filtrar destinos activos |
 | GET | `/destinos/:id` | Público | Consultar la ficha de un destino activo |
+| GET | `/destinos/:id/imagenes-comunidad` | Público | Listar las imágenes aprobadas para un destino |
+| GET | `/destinos/:id/imagenes-comunidad/:imagenId/archivo` | Público | Ver una imagen aprobada |
+| POST | `/destinos/:id/sugerencias-imagenes` | JWT | Enviar una imagen JPG, PNG o WebP (máximo 5 MB) para revisión |
+| GET | `/destinos/:id/opiniones` | Público | Consultar promedio, cantidad de opiniones, nombre público, puntuación y reseña opcional |
+| GET | `/destinos/:id/opinion` | JWT | Consultar la opinión propia del usuario autenticado |
+| POST | `/destinos/:id/opiniones` | JWT | Crear o actualizar una puntuación de 1 a 5 y una reseña opcional |
 | POST | `/destinos` | Admin | Crear un destino |
 | PUT | `/destinos/:id` | Admin | Actualizar un destino |
 | DELETE | `/destinos/:id` | Admin | Ocultar un destino, conservando su registro en PostgreSQL |
@@ -261,8 +271,15 @@ Con la base ya inicializada, no repitas `init-db.ps1` ni `admin:create` para cad
 | GET | `/favoritos` | JWT | Listar favoritos del usuario autenticado |
 | POST | `/favoritos` | JWT | Guardar un destino como favorito |
 | DELETE | `/favoritos/:id` | JWT | Quitar un favorito propio |
+| GET | `/sugerencias-imagenes` | Admin | Consultar las imágenes pendientes de revisión |
+| GET | `/sugerencias-imagenes/:id/archivo` | Admin | Ver una imagen pendiente de forma privada |
+| PATCH | `/sugerencias-imagenes/:id/revision` | Admin | Aprobar o rechazar una imagen |
 
 Las rutas públicas de destinos solo devuelven registros activos. La operación `DELETE /destinos/:id` cambia ese estado a inactivo para que el destino deje de aparecer, sin borrar físicamente el registro ni sus datos de respaldo.
+
+El envío usa `multipart/form-data` con los campos `imagen`, `declara_derechos=true`, `acepta_atribucion=true` y `comentario` opcional. Las imágenes pendientes se guardan localmente en `backend/uploads/sugerencias-imagenes/`, carpeta excluida de Git; PostgreSQL guarda el estado, la atribución y la metadata. Solo el endpoint de imágenes aprobadas las entrega al público. La ficha muestra “Imagen aportada por [nombre]”. La atribución deja constancia del origen y de la declaración del usuario; por sí sola no transfiere ni elimina responsabilidades legales. Para reproducir cargas locales en otro computador, se deben copiar también los archivos de esa carpeta.
+
+El formulario presenta dos confirmaciones obligatorias: que la persona tomó la foto o cuenta con permiso para compartirla, y que acepta mostrar su nombre si se publica. El servidor solo acepta archivos JPG, PNG y WebP de hasta 5 MB y comprueba su firma, además del tipo MIME informado por el navegador.
 
 ### Ejemplos de solicitudes
 
@@ -305,6 +322,7 @@ El registro exitoso responde `201`; los datos inválidos responden `400` y un co
 | SQL | Consultas parametrizadas con PostgreSQL y restricciones de integridad en el esquema |
 | Correo | Normalizado a minúsculas y espacios recortados para registro e inicio de sesión |
 | Coordenadas | Validación de latitud y longitud en la API y restricciones de rango en PostgreSQL |
+| Imágenes aportadas | Solo cuentas autenticadas; JPG, PNG y WebP hasta 5 MB, validación del tipo de archivo y aprobación administrativa antes de publicar |
 | Secreto | `JWT_SECRET` se define en el entorno local; el backend no inicia si falta o es un valor de ejemplo débil |
 | Destinos | El borrado desde el panel es lógico: se conserva el registro y se excluye del catálogo activo |
 
@@ -323,6 +341,7 @@ Flujos incluidos:
 3. El registro o inicio de sesión entrega un JWT de Sendería; el frontend lo utiliza en las rutas que requieren autenticación.
 4. Los favoritos se consultan y modifican en la API para el usuario autenticado.
 5. El panel admin envía altas, cambios y bajas lógicas de destinos a la API; las modificaciones quedan en PostgreSQL.
+6. Una persona con sesión puede enviar una imagen; solo el administrador puede aprobarla o rechazarla. Las aprobadas se muestran en la ficha con el nombre de quien la aportó.
 
 El recorrido integrado capturado está en [`evidencia/recorrido-integrado/`](evidencia/recorrido-integrado/). Las pruebas Cypress, en cambio, interceptan respuestas HTTP y no reemplazan la comprobación con el backend y PostgreSQL reales.
 
@@ -377,7 +396,7 @@ Las capturas están ordenadas en [`evidencia/recorrido-integrado/README.md`](evi
 **Esquema:** [`backend/src/db/init.sql`](backend/src/db/init.sql).  
 **Datos iniciales:** [`backend/src/db/seed.sql`](backend/src/db/seed.sql).
 
-El modelo contiene regiones, categorías, usuarios, destinos y favoritos. Las claves foráneas conectan cada destino con su región y categoría, y los favoritos con un usuario y un destino. Los destinos incluyen `activo` para conservar los registros quitados del catálogo.
+El modelo contiene regiones, categorías, usuarios, destinos, favoritos, opiniones y sugerencias de imágenes. Las claves foráneas conectan cada destino con su región y categoría, y favoritos, opiniones e imágenes sugeridas con su usuario y destino. Cada cuenta puede publicar una sola opinión por destino; puede actualizar su puntuación y reseña. Las imágenes conservan una copia del nombre del aportante y el consentimiento declarado, y requieren aprobación administrativa para mostrarse. El correo no se expone. Los destinos incluyen `activo` para conservar los registros quitados del catálogo.
 
 ```mermaid
 erDiagram
@@ -385,6 +404,10 @@ erDiagram
     CATEGORIAS ||--o{ DESTINOS : clasifica
     USUARIOS ||--o{ FAVORITOS : guarda
     DESTINOS ||--o{ FAVORITOS : recibe
+    USUARIOS ||--o{ OPINIONES : publica
+    DESTINOS ||--o{ OPINIONES : recibe
+    USUARIOS o|--o{ SUGERENCIAS_IMAGENES : aporta
+    DESTINOS ||--o{ SUGERENCIAS_IMAGENES : recibe
 
     REGIONES {
         int id PK
@@ -419,9 +442,26 @@ erDiagram
         int usuario_id FK
         int destino_id FK
     }
+    OPINIONES {
+        int id PK
+        int usuario_id FK
+        int destino_id FK
+        int puntuacion
+        string comentario
+    }
+    SUGERENCIAS_IMAGENES {
+        int id PK
+        int usuario_id FK
+        int destino_id FK
+        string autor_nombre
+        string estado
+        string mime_type
+        boolean declara_tener_derechos
+        boolean acepta_atribucion
+    }
 ```
 
-La base impide duplicar el mismo nombre de destino dentro de una región y limita las coordenadas a rangos geográficos válidos. En favoritos, la combinación usuario/destino es única.
+La base impide duplicar el mismo nombre de destino dentro de una región y limita las coordenadas a rangos geográficos válidos. En favoritos y opiniones, la combinación usuario/destino es única; la puntuación se limita a 1–5 estrellas.
 
 ## 11. Matriz de cumplimiento EP2
 
