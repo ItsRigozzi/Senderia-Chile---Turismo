@@ -12,10 +12,17 @@ export type PersistedDestinoUpdate = Omit<DestinoUpdate, 'latitud' | 'longitud'>
 export async function listDestinos({ categoria, region }: DestinoFiltros) {
   let query = `
     SELECT d.*, c.nombre as categoria_nombre, c.slug as categoria_slug,
-           r.nombre as region_nombre, r.slug as region_slug
+           r.nombre as region_nombre, r.slug as region_slug,
+           calificaciones.calificacion_promedio, calificaciones.total_opiniones
     FROM destinos d
     JOIN categorias c ON d.categoria_id = c.id
     JOIN regiones r ON d.region_id = r.id
+    LEFT JOIN LATERAL (
+      SELECT ROUND(AVG(o.puntuacion)::numeric, 1) AS calificacion_promedio,
+             COUNT(*)::integer AS total_opiniones
+      FROM opiniones o
+      WHERE o.destino_id = d.id
+    ) calificaciones ON TRUE
   `;
   const conditions: string[] = ['d.activo = TRUE'];
   const params: string[][] = [];
@@ -38,10 +45,17 @@ export async function listDestinos({ categoria, region }: DestinoFiltros) {
 export async function findDestinoById(id: number) {
   const result = await pool.query(
     `SELECT d.*, c.nombre as categoria_nombre, c.slug as categoria_slug,
-            r.nombre as region_nombre, r.slug as region_slug
+            r.nombre as region_nombre, r.slug as region_slug,
+            calificaciones.calificacion_promedio, calificaciones.total_opiniones
      FROM destinos d
      JOIN categorias c ON d.categoria_id = c.id
      JOIN regiones r ON d.region_id = r.id
+     LEFT JOIN LATERAL (
+       SELECT ROUND(AVG(o.puntuacion)::numeric, 1) AS calificacion_promedio,
+              COUNT(*)::integer AS total_opiniones
+       FROM opiniones o
+       WHERE o.destino_id = d.id
+     ) calificaciones ON TRUE
      WHERE d.id = $1 AND d.activo = TRUE`,
     [id],
   );

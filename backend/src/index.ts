@@ -10,6 +10,7 @@ import destinosRoutes from './routes/destinos.routes.js';
 import categoriasRoutes from './routes/categorias.routes.js';
 import usuariosRoutes from './routes/usuarios.routes.js';
 import favoritosRoutes from './routes/favoritos.routes.js';
+import sugerenciasImagenesRoutes from './routes/sugerenciasImagenes.routes.js';
 
 dotenv.config();
 
@@ -52,6 +53,7 @@ app.use('/api/destinos', destinosRoutes);
 app.use('/api/categorias', categoriasRoutes);
 app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/favoritos', favoritosRoutes);
+app.use('/api/sugerencias-imagenes', sugerenciasImagenesRoutes);
 
 // Bienvenida / Raíz API
 app.get('/', (_req, res) => {
@@ -62,6 +64,8 @@ app.get('/', (_req, res) => {
       health: '/api/health',
       auth: '/api/auth (login, register, me)',
       destinos: '/api/destinos',
+      opiniones: '/api/destinos/:id/opiniones',
+      sugerencias_imagenes: '/api/destinos/:id/sugerencias-imagenes',
       categorias: '/api/categorias',
       favoritos: '/api/favoritos'
     }
