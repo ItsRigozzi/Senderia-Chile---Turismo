@@ -26,6 +26,14 @@ test('integra PostgreSQL, autenticación, roles, CRUD y favoritos', { skip: !cre
   assert.equal(health.data.database, 'connected', 'health debe comprobar PostgreSQL real');
   await request('/destinos/no-es-id', { expected: 400 });
 
+  const lakesInValparaiso = await request('/destinos?categoria=lago&region=valparaiso', { expected: 200 });
+  assert.ok(lakesInValparaiso.data.destinos.length > 0, 'debe existir al menos un lago en Valparaíso');
+  assert.ok(
+    lakesInValparaiso.data.destinos.every((destination) => destination.categoria_slug === 'lago' && destination.region_slug === 'valparaiso'),
+    'el filtro combinado solo debe devolver lagos de Valparaíso',
+  );
+  await request('/destinos?region=Valpara%C3%ADso%21', { expected: 400 });
+
   const adminLogin = await request('/auth/login', {
     method: 'POST', body: { email: adminEmail, password: adminPassword }, expected: 200,
   });

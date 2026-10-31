@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { destinoSchema, destinoUpdateSchema, idParamSchema } from '../validators/schemas.js';
+import { destinoSchema, destinoUpdateSchema, destinosQuerySchema, idParamSchema } from '../validators/schemas.js';
 import * as destinosService from '../services/destinos.service.js';
 import type { PersistedDestinoUpdate } from '../services/destinos.service.js';
 import { GeocodingError, geocodeDestination } from '../services/geocoding.service.js';
@@ -41,9 +41,12 @@ const resolveCoordinates = async (
 
 export const getDestinos = async (req: Request, res: Response): Promise<void> => {
   try {
-    const categoria = typeof req.query.categoria === 'string' ? req.query.categoria : undefined;
-    const region = typeof req.query.region === 'string' ? req.query.region : undefined;
-    const destinos = await destinosService.listDestinos(categoria, region);
+    const parsedQuery = destinosQuerySchema.safeParse(req.query);
+    if (!parsedQuery.success) {
+      res.status(400).json({ error: 'Parámetros de filtro inválidos', detalles: parsedQuery.error.flatten().fieldErrors });
+      return;
+    }
+    const destinos = await destinosService.listDestinos(parsedQuery.data);
     res.json({ destinos, source: 'database' });
   } catch (err) {
     console.error('Error al obtener destinos:', err instanceof Error ? err.message : err);
