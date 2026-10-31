@@ -92,3 +92,22 @@ export const usuarioUpdateSchema = z.object({
 export const favoritoSchema = z.object({
   destino_id: z.number().int().positive(),
 });
+
+// La puntuación es obligatoria; una reseña escrita es opcional.
+export const opinionSchema = z.object({
+  puntuacion: z.number().int().min(1).max(5),
+  comentario: z.string().trim().max(1000, 'La reseña no puede superar los 1000 caracteres').optional().nullable()
+    .transform((comentario) => comentario || null),
+});
+
+// Multer entrega los campos multipart/form-data como texto. Solo se acepta el valor explícito "true".
+export const sugerenciaImagenSchema = z.object({
+  declara_derechos: z.literal('true'),
+  acepta_atribucion: z.literal('true'),
+  comentario: z.string().trim().max(500, 'El comentario no puede superar los 500 caracteres').optional()
+    .transform((comentario) => comentario || null),
+});
+
+export const revisionSugerenciaImagenSchema = z.object({
+  estado: z.enum(['aprobada', 'rechazada']),
+});

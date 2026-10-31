@@ -98,8 +98,42 @@ CREATE TABLE IF NOT EXISTS favoritos (
   UNIQUE(usuario_id, destino_id)
 );
 
+-- Una opinión por cuenta y destino; la puntuación es requerida y la reseña opcional.
+CREATE TABLE IF NOT EXISTS opiniones (
+  id SERIAL PRIMARY KEY,
+  usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  destino_id INTEGER NOT NULL REFERENCES destinos(id) ON DELETE CASCADE,
+  puntuacion SMALLINT NOT NULL CHECK (puntuacion BETWEEN 1 AND 5),
+  comentario TEXT CHECK (comentario IS NULL OR char_length(comentario) <= 1000),
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(usuario_id, destino_id)
+);
+
+-- Las imágenes aportadas por turistas quedan privadas hasta que un admin las aprueba.
+-- autor_nombre conserva la atribución aunque la cuenta del usuario se elimine.
+CREATE TABLE IF NOT EXISTS sugerencias_imagenes (
+  id SERIAL PRIMARY KEY,
+  destino_id INTEGER NOT NULL REFERENCES destinos(id) ON DELETE CASCADE,
+  usuario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+  autor_nombre VARCHAR(150) NOT NULL,
+  archivo_nombre VARCHAR(100) NOT NULL UNIQUE,
+  mime_type VARCHAR(30) NOT NULL CHECK (mime_type IN ('image/jpeg', 'image/png', 'image/webp')),
+  tamano_bytes INTEGER NOT NULL CHECK (tamano_bytes > 0 AND tamano_bytes <= 5242880),
+  comentario VARCHAR(500),
+  declara_tener_derechos BOOLEAN NOT NULL DEFAULT FALSE,
+  acepta_atribucion BOOLEAN NOT NULL DEFAULT FALSE,
+  estado VARCHAR(20) NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'aprobada', 'rechazada')),
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  revisado_at TIMESTAMP,
+  revisado_por INTEGER REFERENCES usuarios(id) ON DELETE SET NULL
+);
+
 -- Índices para mejorar consultas frecuentes
 CREATE INDEX IF NOT EXISTS idx_destinos_categoria ON destinos(categoria_id);
 CREATE INDEX IF NOT EXISTS idx_destinos_region ON destinos(region_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_destinos_nombre_region ON destinos(nombre, region_id);
 CREATE INDEX IF NOT EXISTS idx_favoritos_usuario ON favoritos(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_opiniones_destino ON opiniones(destino_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_sugerencias_imagenes_estado ON sugerencias_imagenes(estado, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_sugerencias_imagenes_destino ON sugerencias_imagenes(destino_id, estado, created_at DESC);
