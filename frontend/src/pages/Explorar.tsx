@@ -24,6 +24,8 @@ interface Destino {
   longitud: number;
   imagen_url: string | null;
   condiciones_acceso?: string | null;
+  calificacion_promedio: number | string | null;
+  total_opiniones: number;
 }
 
 const Explorar: React.FC = () => {
@@ -331,7 +333,16 @@ const Explorar: React.FC = () => {
 
                         <div className="destino-card-footer">
                           <span style={{ fontSize: '12px', color: '#F59E0B', fontWeight: 600 }}>
-                            ★ 4.8 <span style={{ color: '#94A3B8', fontWeight: 400 }}>(Opiniones)</span>
+                            {destino.calificacion_promedio == null ? (
+                              <>☆ <span style={{ color: '#94A3B8', fontWeight: 400 }}>Sin calificaciones</span></>
+                            ) : (
+                              <>
+                                ★ {Number(destino.calificacion_promedio).toFixed(1)}{' '}
+                                <span style={{ color: '#94A3B8', fontWeight: 400 }}>
+                                  ({destino.total_opiniones} {destino.total_opiniones === 1 ? 'calificación' : 'calificaciones'})
+                                </span>
+                              </>
+                            )}
                           </span>
                           <span style={{ fontSize: '13px', fontWeight: 600, color: '#2563EB' }}>
                             Ver detalles →

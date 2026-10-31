@@ -7,6 +7,7 @@ import { useAuth } from '../context/useAuth';
 import { getApiErrorBody } from '../services/apiError';
 import { getAuthReturnPath } from '../utils/navigation';
 import BrandLink from '../components/BrandLink';
+import PasswordInput from '../components/PasswordInput';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -97,12 +98,11 @@ const Login: React.FC = () => {
                 <label className="input-label">
                   Contraseña <span style={{ color: '#EF4444' }}>*</span>
                 </label>
-                <input
-                  type="password"
-                  className="input-control"
+                <PasswordInput
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
+                  autoComplete="current-password"
                   required
                 />
               </div>
