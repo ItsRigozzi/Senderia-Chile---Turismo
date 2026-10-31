@@ -70,7 +70,7 @@ const FiltrosDestinos: React.FC<FiltrosDestinosProps> = ({
       ) : (
         <div className="filtros-destinos-grupos">
           <GrupoFiltro titulo="Tipo" filtro="categoria" opciones={categorias} seleccionados={seleccion.categoria} onToggle={onToggle} />
-          <GrupoFiltro titulo="Región" filtro="region" opciones={regiones} seleccionados={seleccion.region} onToggle={onToggle} />
+          <GrupoFiltro titulo="Región de Chile" filtro="region" opciones={regiones} seleccionados={seleccion.region} onToggle={onToggle} />
         </div>
       )}
     </div>

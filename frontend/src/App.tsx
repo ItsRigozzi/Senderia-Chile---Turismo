@@ -22,6 +22,7 @@ import Explorar from './pages/Explorar';
 import DestinoDetalle from './pages/DestinoDetalle';
 import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminSugerenciasImagenes from './pages/AdminSugerenciasImagenes';
 import ProtectedRoute from './routes/ProtectedRoute';
 
 import Registro from './pages/Registro';
@@ -51,6 +52,14 @@ const App: React.FC = () => {
                   <AdminDashboard />
                 </ProtectedRoute>
               } 
+            />
+            <Route
+              path="/admin/sugerencias-imagenes"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminSugerenciasImagenes />
+                </ProtectedRoute>
+              }
             />
 
             {/* Redirección Inicial */}

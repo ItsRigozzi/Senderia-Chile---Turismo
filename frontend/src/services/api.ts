@@ -1,6 +1,9 @@
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_ORIGIN = /^https?:\/\//i.test(API_BASE_URL) ? new URL(API_BASE_URL).origin : '';
+
+export const publicAssetUrl = (path: string): string => `${API_ORIGIN}${path}`;
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -51,6 +54,21 @@ export interface DestinoFiltros {
   region: string[];
 }
 
+export interface OpinionDestino {
+  id: number;
+  puntuacion: number;
+  comentario: string | null;
+  autor: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OpinionResumen {
+  calificacion_promedio: number | null;
+  total_opiniones: number;
+  opiniones: OpinionDestino[];
+}
+
 export const destinosService = {
   // Cada filtro se envía repetido (?region=a&region=b); dentro de un filtro el backend aplica OR y entre filtros AND.
   getAll: (filtros?: Partial<DestinoFiltros>) =>
@@ -67,6 +85,54 @@ export const destinosService = {
 
   delete: (id: string | number) =>
     api.delete(`/destinos/${id}`),
+};
+
+// Las opiniones son públicas para consulta, pero requieren JWT para guardar.
+export const opinionesService = {
+  getAll: (destinoId: string | number) =>
+    api.get<OpinionResumen>(`/destinos/${destinoId}/opiniones`),
+
+  getMine: (destinoId: string | number) =>
+    api.get<{ opinion: Omit<OpinionDestino, 'autor'> | null }>(`/destinos/${destinoId}/opinion`),
+
+  save: (destinoId: string | number, data: { puntuacion: number; comentario: string | null }) =>
+    api.post(`/destinos/${destinoId}/opiniones`, data),
+};
+
+export interface ImagenComunidad {
+  id: number;
+  autor_nombre: string;
+  comentario: string | null;
+  created_at: string;
+  imagen_url: string;
+}
+
+export interface SugerenciaImagenAdmin extends ImagenComunidad {
+  destino_id: number;
+  destino_nombre: string;
+  region_nombre: string;
+  categoria_nombre: string;
+  mime_type: string;
+  tamano_bytes: number;
+}
+
+export const sugerenciasImagenesService = {
+  getApproved: (destinoId: number) =>
+    api.get<{ imagenes: ImagenComunidad[] }>(`/destinos/${destinoId}/imagenes-comunidad`),
+
+  submit: (destinoId: number, formData: FormData) =>
+    api.post(`/destinos/${destinoId}/sugerencias-imagenes`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+
+  getPending: () =>
+    api.get<{ sugerencias: SugerenciaImagenAdmin[] }>('/sugerencias-imagenes'),
+
+  getAdminImage: (suggestionId: number) =>
+    api.get<Blob>(`/sugerencias-imagenes/${suggestionId}/archivo`, { responseType: 'blob' }),
+
+  review: (suggestionId: number, estado: 'aprobada' | 'rechazada') =>
+    api.patch(`/sugerencias-imagenes/${suggestionId}/revision`, { estado }),
 };
 
 // ---- Categorías ----

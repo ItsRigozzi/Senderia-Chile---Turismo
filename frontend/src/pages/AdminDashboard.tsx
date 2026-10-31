@@ -33,6 +33,7 @@ const AdminDashboard: React.FC = () => {
   const [notice, setNotice] = useState('');
   // Búsqueda y filtros solo afectan a la tabla de destinos; el formulario usa las listas completas.
   const [filtros, setFiltros] = useState<DestinoFiltros>({ categoria: [], region: [] });
+  const [filtrosAbiertos, setFiltrosAbiertos] = useState(true);
   const [busqueda, setBusqueda] = useState('');
   const [totalDestinos, setTotalDestinos] = useState(0);
   const [actualizandoTabla, setActualizandoTabla] = useState(true);
@@ -82,7 +83,6 @@ const AdminDashboard: React.FC = () => {
 
   useEffect(() => { void loadData(); }, [loadData]);
   useEffect(() => { void loadDestinos(); }, [loadDestinos]);
-
   const toggleFiltro = (filtro: FiltroDestino, slug: string) => {
     setFiltros((actual) => ({
       ...actual,
@@ -176,17 +176,29 @@ const AdminDashboard: React.FC = () => {
           <aside className="admin-sidebar">
             <button className="admin-nav-item" onClick={() => navigate('/explorar')}>Volver a la aplicación ↗</button>
             <button className="admin-nav-item" onClick={() => { logout(); window.location.replace('/login'); }}>Cerrar sesión</button>
-            <div className="admin-sidebar-filtros">
-              <FiltrosDestinos
-                variante="oscuro"
-                regiones={regiones}
-                categorias={categorias}
-                seleccion={filtros}
-                activos={filtrosActivos}
-                onToggle={toggleFiltro}
-                onLimpiar={limpiarFiltros}
-              />
+            <div className={`admin-sidebar-filtros ${filtrosAbiertos ? 'is-open' : 'is-collapsed'}`}>
+              <button
+                type="button"
+                className="admin-sidebar-filtros-toggle"
+                aria-expanded={filtrosAbiertos}
+                onClick={() => setFiltrosAbiertos((abiertos) => !abiertos)}
+              >
+                <span>{filtrosAbiertos ? 'Ocultar filtros' : 'Mostrar filtros'}</span>
+                <span aria-hidden="true">{filtrosAbiertos ? '−' : '+'}</span>
+              </button>
+              {filtrosAbiertos && <div className="admin-sidebar-filtros-scroll">
+                <FiltrosDestinos
+                  variante="oscuro"
+                  regiones={regiones}
+                  categorias={categorias}
+                  seleccion={filtros}
+                  activos={filtrosActivos}
+                  onToggle={toggleFiltro}
+                  onLimpiar={limpiarFiltros}
+                />
+              </div>}
             </div>
+            <button className="admin-nav-item" onClick={() => navigate('/admin/sugerencias-imagenes')}>Imágenes sugeridas →</button>
           </aside>
           <main className="admin-main">
             <div className="admin-header-row"><div><h1>Destinos turísticos</h1><p>Los cambios se guardan en PostgreSQL.</p></div><button onClick={() => { resetForm(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Nuevo destino</button></div>
@@ -197,7 +209,7 @@ const AdminDashboard: React.FC = () => {
               <form onSubmit={saveDestino} className="admin-form-grid">
                 <label>Nombre<input required minLength={2} maxLength={255} value={form.nombre} onChange={(e) => updateField('nombre', e.target.value)} /></label>
                 <label>Categoría<select required value={form.categoria_id} onChange={(e) => updateField('categoria_id', e.target.value)}><option value="">Selecciona una categoría</option>{categorias.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}</select></label>
-                <label>Región<select required value={form.region_id} onChange={(e) => updateField('region_id', e.target.value)}><option value="">Selecciona una región</option>{regiones.map((r) => <option key={r.id} value={r.id}>{r.nombre}</option>)}</select></label>
+                <label>Región del destino<select required value={form.region_id} onChange={(e) => updateField('region_id', e.target.value)}><option value="">Selecciona una región de Chile</option>{regiones.map((r) => <option key={r.id} value={r.id}>{r.nombre}</option>)}</select></label>
                 <label>Latitud (opcional)<input type="number" step="any" min="-90" max="90" placeholder="Ej. -33.42613" value={form.latitud} onChange={(e) => updateField('latitud', e.target.value)} /></label>
                 <label>Longitud (opcional)<input type="number" step="any" min="-180" max="180" placeholder="Ej. -70.43477" value={form.longitud} onChange={(e) => updateField('longitud', e.target.value)} /></label>
                 <label>Horario<input maxLength={255} value={form.horario} onChange={(e) => updateField('horario', e.target.value)} /></label>
@@ -227,6 +239,7 @@ const AdminDashboard: React.FC = () => {
                 </div>
               ) : <div style={{ overflowX: 'auto' }}><table className="admin-table"><thead><tr><th>Nombre</th><th>Categoría</th><th>Región</th><th>Acciones</th></tr></thead><tbody>{destinosVisibles.map((destino) => <tr key={destino.id}><td>{destino.nombre}</td><td>{destino.categoria_nombre}</td><td>{destino.region_nombre}</td><td><button onClick={() => navigate(`/destinos/${destino.id}`)}>Ver</button> <button onClick={() => editDestino(destino)}>Editar</button> <button onClick={() => void deleteDestino(destino)}>Eliminar</button></td></tr>)}</tbody></table></div>}
             </section>
+
           </main>
         </div>
       </IonContent>

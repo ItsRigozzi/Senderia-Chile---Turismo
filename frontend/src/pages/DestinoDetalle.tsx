@@ -5,10 +5,13 @@ import {
   IonSpinner, IonText
 } from '@ionic/react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { destinosService, favoritosService } from '../services/api';
+import { destinosService, favoritosService, publicAssetUrl, sugerenciasImagenesService } from '../services/api';
+import type { ImagenComunidad } from '../services/api';
 import { useAuth } from '../context/useAuth';
 import { getApiErrorBody } from '../services/apiError';
 import BrandLink from '../components/BrandLink';
+import OpinionesDestino from '../components/OpinionesDestino';
+import SugerenciasImagenesDestino from '../components/SugerenciasImagenesDestino';
 
 const MapaDestinos = lazy(() => import('../components/MapaDestinos'));
 
@@ -23,6 +26,8 @@ interface DestinoFull {
   horario: string;
   condiciones_acceso: string;
   imagen_url: string | null;
+  calificacion_promedio: number | string | null;
+  total_opiniones: number;
 }
 
 const DestinoDetalle: React.FC = () => {
@@ -31,6 +36,9 @@ const DestinoDetalle: React.FC = () => {
   const [destino, setDestino] = useState<DestinoFull | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [imagenesComunidad, setImagenesComunidad] = useState<ImagenComunidad[]>([]);
+  const [errorImagenes, setErrorImagenes] = useState('');
+  const [indiceImagen, setIndiceImagen] = useState(0);
   const [favMsg, setFavMsg] = useState('');
   const [isFavorite, setIsFavorite] = useState(false);
   const [checkingFavorite, setCheckingFavorite] = useState(false);
@@ -54,6 +62,24 @@ const DestinoDetalle: React.FC = () => {
     };
     fetchDestino();
   }, [id]);
+
+  useEffect(() => {
+    if (!destino) return;
+    let activo = true;
+    setIndiceImagen(0);
+    setErrorImagenes('');
+    sugerenciasImagenesService.getApproved(destino.id)
+      .then((response) => {
+        if (activo) setImagenesComunidad(response.data.imagenes || []);
+      })
+      .catch((err: unknown) => {
+        if (activo) {
+          setImagenesComunidad([]);
+          setErrorImagenes(getApiErrorBody(err)?.error || 'No se pudieron cargar las imágenes aportadas.');
+        }
+      });
+    return () => { activo = false; };
+  }, [destino]);
 
   useEffect(() => {
     if (authLoading || !destino) return;
@@ -128,6 +154,27 @@ const DestinoDetalle: React.FC = () => {
     );
   }
 
+  const imagenesGaleria = [
+    {
+      id: 'principal',
+      src: destino.imagen_url || '/images/destinos/sin-imagen.svg',
+      alt: destino.nombre,
+      autor: '',
+      comentario: null,
+    },
+    ...imagenesComunidad.map((imagen) => ({
+      id: imagen.id,
+      src: publicAssetUrl(imagen.imagen_url),
+      alt: `${destino.nombre}, imagen aportada por ${imagen.autor_nombre}`,
+      autor: imagen.autor_nombre,
+      comentario: imagen.comentario,
+    })),
+  ];
+  const imagenActual = imagenesGaleria[indiceImagen] || imagenesGaleria[0];
+  const cambiarImagen = (direccion: number) => {
+    setIndiceImagen((actual) => (actual + direccion + imagenesGaleria.length) % imagenesGaleria.length);
+  };
+
   return (
     <IonPage>
       <IonHeader>
@@ -154,24 +201,69 @@ const DestinoDetalle: React.FC = () => {
             <span className="detail-category-badge">{destino.categoria_nombre}</span>
             <h1 className="detail-title">{destino.nombre}</h1>
             <p className="detail-subtitle">{destino.region_nombre}, Chile</p>
-            <div style={{ marginTop: '8px', color: '#F59E0B', fontSize: '14px', fontWeight: 600 }}>
-              ★★★★★ 4.9 <span style={{ color: '#64748B', fontWeight: 400 }}>(Opiniones verificadas)</span>
+            <div className="detail-rating-summary" aria-live="polite">
+              {destino.calificacion_promedio == null ? (
+                <>
+                  <span className="detail-rating-stars" aria-hidden="true">☆</span>
+                  <span>Aún sin calificaciones</span>
+                </>
+              ) : (
+                <>
+                  <span className="detail-rating-stars" aria-hidden="true">★</span>
+                  <strong>{Number(destino.calificacion_promedio).toFixed(1)} / 5</strong>
+                  <span>
+                    ({destino.total_opiniones} {destino.total_opiniones === 1 ? 'calificación' : 'calificaciones'})
+                  </span>
+                </>
+              )}
             </div>
           </div>
 
           <div className="detail-grid">
             {/* Columna Izquierda: Imagen y Descripción */}
             <div>
-              <img
-                src={destino.imagen_url || '/images/destinos/sin-imagen.svg'}
-                alt={destino.nombre}
-                className="detail-main-img"
-                onError={(e) => {
-                  if (!e.currentTarget.src.endsWith('/sin-imagen.svg')) {
-                    e.currentTarget.src = '/images/destinos/sin-imagen.svg';
-                  }
-                }}
-              />
+              <div className="detail-gallery" role="group" aria-roledescription="carrusel" aria-label={`Galería de imágenes de ${destino.nombre}`}>
+                <img
+                  key={imagenActual.id}
+                  src={imagenActual.src}
+                  alt={imagenActual.alt}
+                  className="detail-main-img"
+                  onError={(event) => {
+                    if (!event.currentTarget.src.endsWith('/sin-imagen.svg')) {
+                      event.currentTarget.src = '/images/destinos/sin-imagen.svg';
+                    }
+                  }}
+                />
+                {imagenesGaleria.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      className="detail-gallery-arrow detail-gallery-arrow--left"
+                      aria-label="Ver imagen anterior"
+                      onClick={() => cambiarImagen(-1)}
+                    >
+                      ‹
+                    </button>
+                    <button
+                      type="button"
+                      className="detail-gallery-arrow detail-gallery-arrow--right"
+                      aria-label="Ver imagen siguiente"
+                      onClick={() => cambiarImagen(1)}
+                    >
+                      ›
+                    </button>
+                    <div className="detail-gallery-caption" aria-live="polite">
+                      {imagenActual.autor && (
+                        <span className="detail-gallery-credit">
+                          Imagen aportada por {imagenActual.autor}
+                          {imagenActual.comentario && ` · ${imagenActual.comentario}`}
+                        </span>
+                      )}
+                      <span>{indiceImagen + 1} / {imagenesGaleria.length}</span>
+                    </div>
+                  </>
+                )}
+              </div>
 
               <h2 className="detail-section-title">Descripción y Atractivos</h2>
               <p style={{ color: '#334155', lineHeight: '1.7', fontSize: '15px' }}>
@@ -248,6 +340,9 @@ const DestinoDetalle: React.FC = () => {
             </div>
           </div>
 
+          {errorImagenes && <p className="community-images-error" role="status">{errorImagenes}</p>}
+          <SugerenciasImagenesDestino destinoId={destino.id} />
+
           <section className="destination-map-section" aria-labelledby="destination-map-title">
             <div className="destination-map-heading">
               <div>
@@ -273,6 +368,8 @@ const DestinoDetalle: React.FC = () => {
               />
             </Suspense>
           </section>
+
+          <OpinionesDestino destinoId={destino.id} />
         </div>
       </IonContent>
     </IonPage>

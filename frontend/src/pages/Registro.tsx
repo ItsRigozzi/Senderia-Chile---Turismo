@@ -7,6 +7,7 @@ import { useAuth } from '../context/useAuth';
 import { getApiErrorBody } from '../services/apiError';
 import { getAuthReturnPath } from '../utils/navigation';
 import BrandLink from '../components/BrandLink';
+import PasswordInput from '../components/PasswordInput';
 
 const Registro: React.FC = () => {
   const [nombre, setNombre] = useState('');
@@ -128,14 +129,13 @@ const Registro: React.FC = () => {
                 <label className="input-label">
                   Contraseña <span style={{ color: '#EF4444' }}>*</span>
                 </label>
-                <input
-                  type="password"
-                  className="input-control"
+                <PasswordInput
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Mínimo 8 caracteres; incluye una letra o número"
                   minLength={8}
                   pattern=".*[A-Za-z0-9].*"
+                  autoComplete="new-password"
                   required
                 />
               </div>
@@ -144,12 +144,11 @@ const Registro: React.FC = () => {
                 <label className="input-label">
                   Confirmar contraseña <span style={{ color: '#EF4444' }}>*</span>
                 </label>
-                <input
-                  type="password"
-                  className="input-control"
+                <PasswordInput
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Repite la contraseña"
+                  autoComplete="new-password"
                   required
                 />
               </div>
