@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { IonButton, IonContent, IonHeader, IonPage, IonSpinner, IonToolbar } from '@ionic/react';
 import { useNavigate } from 'react-router-dom';
-import { favoritosService } from '../services/api';
+import { favoritosService, publicAssetUrl } from '../services/api';
 import { getApiErrorBody } from '../services/apiError';
 import BrandLink from '../components/BrandLink';
 
@@ -62,7 +62,7 @@ const Favoritos: React.FC = () => {
             <p>Tu colección de destinos para planificar tu próximo viaje por Chile.</p>
           </header>
           {error && <p role="alert" className="favorites-error">{error}</p>}
-          {loading ? <div className="favorites-loading"><IonSpinner /><span>Cargando favoritos…</span></div> : favoritos.length === 0 ? <section className="favorites-empty"><span aria-hidden="true">♡</span><h2>Aún no guardas destinos</h2><p>Explora Chile y agrega a favoritos los lugares que quieras visitar.</p><IonButton onClick={() => navigate('/explorar')}>Explorar destinos</IonButton></section> : <section className="favorites-grid">{favoritos.map((item) => <article className="favorite-card" key={item.favorito_id}><button className="favorite-image-button" onClick={() => navigate(`/destinos/${item.id}`)} aria-label={`Ver ${item.nombre}`}><img src={item.imagen_url || '/images/destinos/sin-imagen.svg'} alt={item.nombre} loading="lazy" onError={(e) => { if (!e.currentTarget.src.endsWith('/sin-imagen.svg')) e.currentTarget.src = '/images/destinos/sin-imagen.svg'; }} /></button><div className="favorite-card-body"><span>{item.region_nombre} · {item.categoria_nombre}</span><h2>{item.nombre}</h2><p>{item.descripcion}</p><div><IonButton fill="clear" onClick={() => navigate(`/destinos/${item.id}`)}>Ver destino</IonButton><IonButton color="medium" fill="clear" onClick={() => void remove(item.favorito_id)}>Quitar</IonButton></div></div></article>)}</section>}
+          {loading ? <div className="favorites-loading"><IonSpinner /><span>Cargando favoritos…</span></div> : favoritos.length === 0 ? <section className="favorites-empty"><span aria-hidden="true">♡</span><h2>Aún no guardas destinos</h2><p>Explora Chile y agrega a favoritos los lugares que quieras visitar.</p><IonButton onClick={() => navigate('/explorar')}>Explorar destinos</IonButton></section> : <section className="favorites-grid">{favoritos.map((item) => <article className="favorite-card" key={item.favorito_id}><button className="favorite-image-button" onClick={() => navigate(`/destinos/${item.id}`)} aria-label={`Ver ${item.nombre}`}><img src={item.imagen_url?.startsWith('/api/') ? publicAssetUrl(item.imagen_url) : item.imagen_url || '/images/destinos/sin-imagen.svg'} alt={item.nombre} loading="lazy" onError={(e) => { if (!e.currentTarget.src.endsWith('/sin-imagen.svg')) e.currentTarget.src = '/images/destinos/sin-imagen.svg'; }} /></button><div className="favorite-card-body"><span>{item.region_nombre} · {item.categoria_nombre}</span><h2>{item.nombre}</h2><p>{item.descripcion}</p><div><IonButton fill="clear" onClick={() => navigate(`/destinos/${item.id}`)}>Ver destino</IonButton><IonButton color="medium" fill="clear" onClick={() => void remove(item.favorito_id)}>Quitar</IonButton></div></div></article>)}</section>}
         </main>
       </IonContent>
     </IonPage>

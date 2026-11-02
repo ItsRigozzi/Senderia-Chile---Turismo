@@ -4,7 +4,7 @@ import {
   useIonViewWillEnter
 } from '@ionic/react';
 import { useAuth } from '../context/useAuth';
-import { categoriasService, destinosService } from '../services/api';
+import { categoriasService, destinosService, publicAssetUrl } from '../services/api';
 import type { Categoria, DestinoFiltros, Region } from '../services/api';
 import { getApiErrorBody } from '../services/apiError';
 import { useNavigate } from 'react-router-dom';
@@ -315,7 +315,9 @@ const Explorar: React.FC = () => {
                     >
                       <div className="destino-img-wrap">
                         <img
-                          src={destino.imagen_url || '/images/destinos/sin-imagen.svg'}
+                          src={destino.imagen_url?.startsWith('/api/')
+                            ? publicAssetUrl(destino.imagen_url)
+                            : destino.imagen_url || '/images/destinos/sin-imagen.svg'}
                           alt={destino.nombre}
                           loading="lazy"
                           onError={(e) => {
