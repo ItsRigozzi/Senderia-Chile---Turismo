@@ -154,15 +154,25 @@ const DestinoDetalle: React.FC = () => {
     );
   }
 
+  const imagenPrincipalEsReemplazo = !destino.imagen_url?.trim()
+    || /^\/?images\/destinos\/sin-imagen\.svg(?:[?#].*)?$/i.test(destino.imagen_url.trim());
+  const aporteUsadoComoPrincipal = imagenesComunidad.find((imagen) => imagen.imagen_url === destino.imagen_url)
+    || (imagenPrincipalEsReemplazo ? imagenesComunidad[0] : undefined);
   const imagenesGaleria = [
     {
       id: 'principal',
-      src: destino.imagen_url || '/images/destinos/sin-imagen.svg',
-      alt: destino.nombre,
-      autor: '',
-      comentario: null,
+      src: aporteUsadoComoPrincipal
+        ? publicAssetUrl(aporteUsadoComoPrincipal.imagen_url)
+        : destino.imagen_url?.startsWith('/api/')
+          ? publicAssetUrl(destino.imagen_url)
+          : destino.imagen_url || '/images/destinos/sin-imagen.svg',
+      alt: aporteUsadoComoPrincipal
+        ? `${destino.nombre}, imagen aportada por ${aporteUsadoComoPrincipal.autor_nombre}`
+        : destino.nombre,
+      autor: aporteUsadoComoPrincipal?.autor_nombre || '',
+      comentario: aporteUsadoComoPrincipal?.comentario || null,
     },
-    ...imagenesComunidad.map((imagen) => ({
+    ...imagenesComunidad.filter((imagen) => imagen.id !== aporteUsadoComoPrincipal?.id).map((imagen) => ({
       id: imagen.id,
       src: publicAssetUrl(imagen.imagen_url),
       alt: `${destino.nombre}, imagen aportada por ${imagen.autor_nombre}`,
@@ -252,16 +262,18 @@ const DestinoDetalle: React.FC = () => {
                     >
                       ›
                     </button>
-                    <div className="detail-gallery-caption" aria-live="polite">
-                      {imagenActual.autor && (
-                        <span className="detail-gallery-credit">
-                          Imagen aportada por {imagenActual.autor}
-                          {imagenActual.comentario && ` · ${imagenActual.comentario}`}
-                        </span>
-                      )}
-                      <span>{indiceImagen + 1} / {imagenesGaleria.length}</span>
-                    </div>
                   </>
+                )}
+                {(imagenesGaleria.length > 1 || imagenActual.autor) && (
+                  <div className="detail-gallery-caption" aria-live="polite">
+                    {imagenActual.autor && (
+                      <span className="detail-gallery-credit">
+                        Imagen aportada por {imagenActual.autor}
+                        {imagenActual.comentario && ` · ${imagenActual.comentario}`}
+                      </span>
+                    )}
+                    {imagenesGaleria.length > 1 && <span>{indiceImagen + 1} / {imagenesGaleria.length}</span>}
+                  </div>
                 )}
               </div>
 
