@@ -78,15 +78,62 @@ export async function findPendingImage(imageId: number) {
 }
 
 export async function reviewSuggestion(imageId: number, adminId: number, estado: 'aprobada' | 'rechazada') {
-  const result = await pool.query(
-    `UPDATE sugerencias_imagenes
-     SET estado = $3, revisado_por = $2, revisado_at = CURRENT_TIMESTAMP
-     WHERE id = $1 AND estado = 'pendiente'
-     RETURNING id, estado`,
-    [imageId, adminId, estado],
-  );
-  if (result.rows[0]) return { result: result.rows[0], alreadyReviewed: false };
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
 
-  const existing = await pool.query('SELECT id FROM sugerencias_imagenes WHERE id = $1', [imageId]);
-  return { result: undefined, alreadyReviewed: existing.rows.length > 0 };
+    const pending = await client.query<{
+      id: number;
+      destino_id: number;
+      estado: string;
+      destino_activo: boolean;
+    }>(
+      `SELECT s.id, s.destino_id, s.estado, d.activo AS destino_activo
+       FROM sugerencias_imagenes s
+       JOIN destinos d ON d.id = s.destino_id
+       WHERE s.id = $1
+       FOR UPDATE OF s, d`,
+      [imageId],
+    );
+    const suggestion = pending.rows[0];
+
+    if (!suggestion || suggestion.estado !== 'pendiente' || !suggestion.destino_activo) {
+      await client.query('COMMIT');
+      return {
+        result: undefined,
+        alreadyReviewed: Boolean(suggestion && suggestion.estado !== 'pendiente'),
+      };
+    }
+
+    const reviewed = await client.query(
+      `UPDATE sugerencias_imagenes
+       SET estado = $3, revisado_por = $2, revisado_at = CURRENT_TIMESTAMP
+       WHERE id = $1 AND estado = 'pendiente'
+       RETURNING id, estado`,
+      [imageId, adminId, estado],
+    );
+
+    if (estado === 'aprobada') {
+      const imageUrl = `/api/destinos/${suggestion.destino_id}/imagenes-comunidad/${imageId}/archivo`;
+      await client.query(
+        `UPDATE destinos
+         SET imagen_url = $2, updated_at = CURRENT_TIMESTAMP
+         WHERE id = $1
+           AND (
+             imagen_url IS NULL
+             OR BTRIM(imagen_url) = ''
+             OR REGEXP_REPLACE(BTRIM(imagen_url), '^/', '') = 'images/destinos/sin-imagen.svg'
+           )`,
+        [suggestion.destino_id, imageUrl],
+      );
+    }
+
+    await client.query('COMMIT');
+    return { result: reviewed.rows[0], alreadyReviewed: false };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 }
