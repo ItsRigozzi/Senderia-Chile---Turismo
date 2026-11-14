@@ -6,6 +6,7 @@ export interface AuthPayload {
   userId: number;
   email: string;
   rol: string;
+  passwordChangedAt?: number | null;
 }
 
 // Extiende Request para incluir el usuario autenticado
@@ -39,11 +40,22 @@ export const auth = async (req: Request, res: Response, next: NextFunction): Pro
     return;
   }
   try {
-    const result = await pool.query('SELECT id, email, rol FROM usuarios WHERE id = $1', [decoded.userId]);
+    const result = await pool.query(
+      'SELECT id, email, rol, password_changed_at FROM usuarios WHERE id = $1',
+      [decoded.userId],
+    );
     if (result.rows.length === 0) {
       res.status(401).json({ error: 'La cuenta asociada al token ya no existe' });
       return;
     }
+    const passwordChangedAt = result.rows[0].password_changed_at
+      ? new Date(result.rows[0].password_changed_at).getTime()
+      : null;
+    if ((decoded.passwordChangedAt ?? null) !== passwordChangedAt) {
+      res.status(401).json({ error: 'La sesión terminó porque se restableció la contraseña. Inicia sesión nuevamente.' });
+      return;
+    }
+
     req.user = { userId: result.rows[0].id, email: result.rows[0].email, rol: result.rows[0].rol };
     next();
   } catch {

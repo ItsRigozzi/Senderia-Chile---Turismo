@@ -18,6 +18,28 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'La contraseña es requerida'),
 });
 
+export const emailSchema = z.object({
+  email: z.string().trim().toLowerCase().email('Email inválido').max(255),
+});
+
+export const emailCodeSchema = z.object({
+  email: z.string().trim().toLowerCase().email('Email inválido').max(255),
+  codigo: z.string().regex(/^\d{6}$/, 'El código debe tener 6 dígitos'),
+});
+
+export const googleCredentialSchema = z.object({
+  credential: z.string().min(20).max(10000),
+});
+
+const touristPasswordSchema = z.string()
+  .min(8, 'La contraseña debe tener al menos 8 caracteres')
+  .max(100)
+  .regex(/[a-zA-Z0-9]/, 'La contraseña debe incluir al menos una letra o un número');
+
+export const completePasswordResetSchema = emailCodeSchema.extend({
+  password: touristPasswordSchema,
+});
+
 export const createAdminSchema = z.object({
   nombre: z.string().min(2).max(150),
   email: z.string().trim().toLowerCase().email().max(255),
