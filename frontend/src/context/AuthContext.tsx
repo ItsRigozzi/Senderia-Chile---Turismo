@@ -39,7 +39,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const register = async (nombre: string, email: string, password: string) => {
-    const response = await authService.register(nombre, email, password);
+    await authService.register(nombre, email, password);
+  };
+
+  const verifyEmail = async (email: string, codigo: string) => {
+    const response = await authService.verifyEmail(email, codigo);
+    const { usuario, token: newToken } = response.data;
+    persistSession(usuario, newToken);
+  };
+
+  const loginWithGoogle = async (credential: string) => {
+    const response = await authService.loginWithGoogle(credential);
     const { usuario, token: newToken } = response.data;
     persistSession(usuario, newToken);
   };
@@ -67,6 +77,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isAdmin: user?.rol === 'admin',
         login,
         register,
+        verifyEmail,
+        loginWithGoogle,
         logout,
         loading,
       }}

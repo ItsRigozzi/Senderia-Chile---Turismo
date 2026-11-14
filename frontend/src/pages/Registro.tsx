@@ -5,7 +5,6 @@ import {
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { getApiErrorBody } from '../services/apiError';
-import { getAuthReturnPath } from '../utils/navigation';
 import BrandLink from '../components/BrandLink';
 import PasswordInput from '../components/PasswordInput';
 
@@ -46,9 +45,27 @@ const Registro: React.FC = () => {
 
     try {
       await register(nombre, email, password);
-      navigate(getAuthReturnPath(location.state, location.search), { replace: true });
+      navigate('/verificar-correo', {
+        replace: true,
+        state: {
+          email: email.trim().toLowerCase(),
+          from: (location.state as { from?: unknown } | null)?.from,
+          notice: 'Te enviamos un código de 6 dígitos. Revisa también la carpeta de spam.',
+        },
+      });
     } catch (err: unknown) {
       const response = getApiErrorBody(err);
+      if (response?.code === 'EMAIL_SEND_FAILED' && response.email) {
+        navigate('/verificar-correo', {
+          replace: true,
+          state: {
+            email: response.email,
+            from: (location.state as { from?: unknown } | null)?.from,
+            error: 'La cuenta se creó, pero el envío del correo falló. Revisa el SMTP e intenta reenviar el código.',
+          },
+        });
+        return;
+      }
       if (response?.detalles) {
         const detalles = response.detalles;
         const mensajes = Object.values(detalles).flat().join('. ');

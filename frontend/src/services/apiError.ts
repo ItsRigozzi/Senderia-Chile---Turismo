@@ -2,6 +2,8 @@ import axios from 'axios';
 
 interface ApiErrorBody {
   error?: string;
+  code?: string;
+  email?: string;
   detalles?: Record<string, string[]>;
 }
 

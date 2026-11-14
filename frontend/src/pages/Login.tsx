@@ -8,17 +8,21 @@ import { getApiErrorBody } from '../services/apiError';
 import { getAuthReturnPath } from '../utils/navigation';
 import BrandLink from '../components/BrandLink';
 import PasswordInput from '../components/PasswordInput';
+import GoogleSignInButton from '../components/GoogleSignInButton';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [verificationEmail, setVerificationEmail] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const [notice] = useState(() => (location.state as { notice?: string } | null)?.notice || '');
+  const { login, loginWithGoogle } = useAuth();
 
   const handleLogin = async () => {
+    setVerificationEmail('');
     if (!email || !password) {
       setError('Por favor completa todos los campos');
       return;
@@ -32,6 +36,9 @@ const Login: React.FC = () => {
       navigate(getAuthReturnPath(location.state, location.search), { replace: true });
     } catch (err: unknown) {
       const response = getApiErrorBody(err);
+      if (response?.code === 'EMAIL_NOT_VERIFIED') {
+        setVerificationEmail(email.trim().toLowerCase());
+      }
       if (response?.detalles) {
         const detalles = response.detalles;
         const mensajes = Object.values(detalles).flat().join('. ');
@@ -40,6 +47,21 @@ const Login: React.FC = () => {
         const msg = response?.error || 'Error al iniciar sesión';
         setError(msg);
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleCredential = async (credential: string) => {
+    setLoading(true);
+    setError('');
+    setVerificationEmail('');
+    try {
+      await loginWithGoogle(credential);
+      navigate(getAuthReturnPath(location.state, location.search), { replace: true });
+    } catch (err: unknown) {
+      const response = getApiErrorBody(err);
+      setError(response?.error || 'No se pudo iniciar sesión con Google. Intenta nuevamente.');
     } finally {
       setLoading(false);
     }
@@ -78,6 +100,8 @@ const Login: React.FC = () => {
               </div>
             )}
 
+            {notice && <p className="auth-success-message" role="status">{notice}</p>}
+
             <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
               <div className="input-group">
                 <label className="input-label">
@@ -115,6 +139,35 @@ const Login: React.FC = () => {
                 {loading ? 'Ingresando...' : 'Iniciar Sesión'}
               </button>
             </form>
+
+            {verificationEmail && (
+              <button
+                type="button"
+                className="custom-ghost-btn"
+                onClick={() => navigate('/verificar-correo', {
+                  state: {
+                    email: verificationEmail,
+                    from: (location.state as { from?: unknown } | null)?.from,
+                  },
+                })}
+              >
+                Verificar correo de {verificationEmail}
+              </button>
+            )}
+
+            <button
+              type="button"
+              className="auth-text-link"
+              onClick={() => navigate('/recuperar-contrasena')}
+            >
+              ¿Olvidaste tu contraseña?
+            </button>
+
+            <div className="auth-divider"><span>o</span></div>
+            <GoogleSignInButton
+              onCredential={(credential) => { void handleGoogleCredential(credential); }}
+              onError={setError}
+            />
 
             <div style={{ marginTop: 20, textAlign: 'center' }}>
               <button

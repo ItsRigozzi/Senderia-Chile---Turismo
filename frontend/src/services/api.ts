@@ -26,11 +26,12 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     // Si da 401 en peticiones autenticadas (no en login ni registro), limpiar sesión y redirigir
-    const isAuthEndpoint = error.config?.url?.includes('/auth/login') || error.config?.url?.includes('/auth/register');
-    if (error.response?.status === 401 && !isAuthEndpoint) {
+    const isPublicAuthEndpoint = /^\/auth\/(register|login|verify-email|verification\/resend|google|password-reset\/request|password-reset\/confirm)(?:$|\?|\/)/
+      .test(error.config?.url || '');
+    if (error.response?.status === 401 && !isPublicAuthEndpoint) {
       localStorage.removeItem('senderia_token');
       localStorage.removeItem('senderia_user');
-      if (window.location.pathname !== '/login' && window.location.pathname !== '/registro') {
+      if (!['/login', '/registro', '/verificar-correo', '/recuperar-contrasena'].includes(window.location.pathname)) {
         const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
         window.location.assign(`/login?returnTo=${encodeURIComponent(currentPath)}`);
       }
@@ -46,6 +47,21 @@ export const authService = {
 
   register: (nombre: string, email: string, password: string) =>
     api.post('/auth/register', { nombre, email, password }),
+
+  verifyEmail: (email: string, codigo: string) =>
+    api.post<{ usuario: { id: number; nombre: string; email: string; rol: string }; token: string }>('/auth/verify-email', { email, codigo }),
+
+  resendVerificationCode: (email: string) =>
+    api.post<{ mensaje: string }>('/auth/verification/resend', { email }),
+
+  loginWithGoogle: (credential: string) =>
+    api.post<{ usuario: { id: number; nombre: string; email: string; rol: string }; token: string }>('/auth/google', { credential }),
+
+  requestPasswordReset: (email: string) =>
+    api.post<{ mensaje: string }>('/auth/password-reset/request', { email }),
+
+  completePasswordReset: (email: string, codigo: string, password: string) =>
+    api.post<{ mensaje: string }>('/auth/password-reset/confirm', { email, codigo, password }),
 };
 
 // ---- Destinos ----
