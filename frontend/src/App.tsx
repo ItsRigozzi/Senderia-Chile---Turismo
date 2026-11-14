@@ -26,6 +26,8 @@ import AdminSugerenciasImagenes from './pages/AdminSugerenciasImagenes';
 import ProtectedRoute from './routes/ProtectedRoute';
 
 import Registro from './pages/Registro';
+import VerificarCorreo from './pages/VerificarCorreo';
+import RecuperarContrasena from './pages/RecuperarContrasena';
 import Favoritos from './pages/Favoritos';
 import { AuthProvider } from './context/AuthContext';
 
@@ -42,6 +44,8 @@ const App: React.FC = () => {
             <Route path="/destinos/:id" element={<DestinoDetalle />} />
             <Route path="/login" element={<Login />} />
             <Route path="/registro" element={<Registro />} />
+            <Route path="/verificar-correo" element={<VerificarCorreo />} />
+            <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
             <Route path="/favoritos" element={<ProtectedRoute><Favoritos /></ProtectedRoute>} />
             
             {/* Rutas Privadas */}

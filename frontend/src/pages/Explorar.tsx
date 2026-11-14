@@ -18,8 +18,12 @@ const MapaDestinos = lazy(() => import('../components/MapaDestinos'));
 interface Destino {
   id: number;
   nombre: string;
+  categoria_id: number;
   categoria_nombre: string;
+  categoria_slug: string;
+  region_id: number;
   region_nombre: string;
+  region_slug: string;
   latitud: number;
   longitud: number;
   imagen_url: string | null;
@@ -36,10 +40,12 @@ const Explorar: React.FC = () => {
   const [opcionesCategorias, setOpcionesCategorias] = useState<Categoria[]>([]);
   const [opcionesRegiones, setOpcionesRegiones] = useState<Region[]>([]);
   const [errorOpciones, setErrorOpciones] = useState('');
+  const opcionesFiltrosDisponibles = useRef(false);
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
   const ultimaPeticion = useRef(0);
   const filtrosIniciales = useRef(true);
   const { isAuthenticated, isAdmin, logout, user } = useAuth();
+  const estadoSesionAnterior = useRef(isAuthenticated);
   const navigate = useNavigate();
 
   const fetchDestinos = useCallback(async () => {
@@ -51,7 +57,40 @@ const Explorar: React.FC = () => {
       const response = await destinosService.getAll(filtros);
       if (peticion !== ultimaPeticion.current) return;
       const data: { destinos?: Destino[] } = response.data;
-      setDestinos(data?.destinos || []);
+      const destinosCargados = data?.destinos || [];
+      setDestinos(destinosCargados);
+
+      // Respaldo para que los filtros no queden vacíos si sus endpoints aún no respondieron.
+      const categoriasPorId = new Map<number, Categoria>();
+      const regionesPorId = new Map<number, Region>();
+      destinosCargados.forEach((destino) => {
+        if (destino.categoria_id && destino.categoria_nombre && destino.categoria_slug) {
+          categoriasPorId.set(destino.categoria_id, {
+            id: destino.categoria_id,
+            nombre: destino.categoria_nombre,
+            slug: destino.categoria_slug,
+            descripcion: null,
+          });
+        }
+        if (destino.region_id && destino.region_nombre && destino.region_slug) {
+          regionesPorId.set(destino.region_id, {
+            id: destino.region_id,
+            nombre: destino.region_nombre,
+            slug: destino.region_slug,
+          });
+        }
+      });
+      const categoriasDesdeDestinos = Array.from(categoriasPorId.values())
+        .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+      const regionesDesdeDestinos = Array.from(regionesPorId.values())
+        .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+
+      if (categoriasDesdeDestinos.length && regionesDesdeDestinos.length) {
+        opcionesFiltrosDisponibles.current = true;
+        setOpcionesCategorias((actuales) => actuales.length ? actuales : categoriasDesdeDestinos);
+        setOpcionesRegiones((actuales) => actuales.length ? actuales : regionesDesdeDestinos);
+        setErrorOpciones('');
+      }
     } catch (err: unknown) {
       if (peticion !== ultimaPeticion.current) return;
       setError(getApiErrorBody(err)?.error || 'No se pudo conectar con la API. Comprueba que PostgreSQL y el backend estén activos.');
@@ -65,11 +104,21 @@ const Explorar: React.FC = () => {
       const [categoriasResponse, regionesResponse] = await Promise.all([
         categoriasService.getAll(), categoriasService.getRegiones(),
       ]);
-      setOpcionesCategorias(categoriasResponse.data.categorias || []);
-      setOpcionesRegiones(regionesResponse.data.regiones || []);
-      setErrorOpciones('');
+      const categorias = categoriasResponse.data.categorias || [];
+      const regiones = regionesResponse.data.regiones || [];
+      if (categorias.length) setOpcionesCategorias(categorias);
+      if (regiones.length) setOpcionesRegiones(regiones);
+      if (categorias.length && regiones.length) {
+        opcionesFiltrosDisponibles.current = true;
+        setErrorOpciones('');
+      } else if (!opcionesFiltrosDisponibles.current) {
+        setErrorOpciones('No se encontraron opciones para los filtros. Intenta nuevamente en unos minutos.');
+      }
     } catch {
-      setErrorOpciones('No se pudieron cargar los filtros. Intenta nuevamente en unos minutos.');
+      // Si los destinos ya aportaron categorías y regiones, conservar esos filtros como respaldo.
+      if (!opcionesFiltrosDisponibles.current) {
+        setErrorOpciones('No se pudieron cargar los filtros. Intenta nuevamente en unos minutos.');
+      }
     }
   }, []);
 
@@ -77,6 +126,14 @@ const Explorar: React.FC = () => {
     void fetchDestinos();
     void fetchOpcionesFiltros();
   }, [fetchDestinos, fetchOpcionesFiltros]);
+
+  // Ionic puede conservar Explorar montado mientras se inicia sesión desde otra vista.
+  // Al volver con una sesión nueva, consulta otra vez las opciones de filtros.
+  useEffect(() => {
+    if (estadoSesionAnterior.current === isAuthenticated) return;
+    estadoSesionAnterior.current = isAuthenticated;
+    if (isAuthenticated) void fetchOpcionesFiltros();
+  }, [isAuthenticated, fetchOpcionesFiltros]);
 
   // La carga inicial la hace useIonViewWillEnter; aquí solo se vuelve a consultar al cambiar los filtros.
   useEffect(() => {
