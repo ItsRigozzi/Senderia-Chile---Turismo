@@ -33,11 +33,13 @@ export async function configureAdmin(nombre: string, email: string, password: st
   const passwordHash = await bcrypt.hash(password, 12);
   const normalizedEmail = email.trim().toLowerCase();
   const result = await pool.query(
-    `INSERT INTO usuarios (nombre, email, password_hash, rol)
-     VALUES ($1, $2, $3, 'admin')
+    `INSERT INTO usuarios (nombre, email, password_hash, google_sub, email_verificado, email_verificado_en, password_changed_at, rol)
+     VALUES ($1, $2, $3, NULL, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'admin')
      ON CONFLICT ((lower(btrim(email)))) DO UPDATE
      SET nombre = EXCLUDED.nombre, email = EXCLUDED.email,
-         password_hash = EXCLUDED.password_hash, rol = 'admin'
+         password_hash = EXCLUDED.password_hash, google_sub = NULL,
+         email_verificado = TRUE, email_verificado_en = CURRENT_TIMESTAMP,
+         password_changed_at = CURRENT_TIMESTAMP, rol = 'admin'
      RETURNING id, nombre, email, rol`,
     [nombre, normalizedEmail, passwordHash],
   );

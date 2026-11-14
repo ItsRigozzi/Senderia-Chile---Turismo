@@ -62,7 +62,7 @@ app.get('/', (_req, res) => {
     version: '1.0.0',
     endpoints: {
       health: '/api/health',
-      auth: '/api/auth (login, register, me)',
+      auth: '/api/auth (register, verify-email, login, google, password-reset, me)',
       destinos: '/api/destinos',
       opiniones: '/api/destinos/:id/opiniones',
       sugerencias_imagenes: '/api/destinos/:id/sugerencias-imagenes',

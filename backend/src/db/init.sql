@@ -23,10 +23,44 @@ CREATE TABLE IF NOT EXISTS usuarios (
   id SERIAL PRIMARY KEY,
   nombre VARCHAR(150) NOT NULL,
   email VARCHAR(255) NOT NULL UNIQUE,
-  password_hash VARCHAR(255) NOT NULL,
+  password_hash VARCHAR(255),
+  google_sub VARCHAR(255),
+  email_verificado BOOLEAN NOT NULL DEFAULT TRUE,
+  email_verificado_en TIMESTAMPTZ,
+  password_changed_at TIMESTAMPTZ,
   rol VARCHAR(20) NOT NULL DEFAULT 'turista' CHECK (rol IN ('turista', 'admin')),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Mantiene las cuentas existentes activas y permite cuentas Google sin contraseña local.
+ALTER TABLE public.usuarios
+  ALTER COLUMN password_hash DROP NOT NULL;
+ALTER TABLE public.usuarios
+  ADD COLUMN IF NOT EXISTS google_sub VARCHAR(255);
+ALTER TABLE public.usuarios
+  ADD COLUMN IF NOT EXISTS email_verificado BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE public.usuarios
+  ADD COLUMN IF NOT EXISTS email_verificado_en TIMESTAMPTZ;
+ALTER TABLE public.usuarios
+  ADD COLUMN IF NOT EXISTS password_changed_at TIMESTAMPTZ;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_usuarios_google_sub
+  ON usuarios (google_sub)
+  WHERE google_sub IS NOT NULL;
+
+-- Guarda solo hashes de códigos de un solo uso para verificar correo y recuperar contraseña.
+CREATE TABLE IF NOT EXISTS auth_email_codes (
+  usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  proposito VARCHAR(24) NOT NULL CHECK (proposito IN ('verificacion', 'recuperacion')),
+  codigo_hash VARCHAR(64) NOT NULL,
+  expira_at TIMESTAMPTZ NOT NULL,
+  intentos SMALLINT NOT NULL DEFAULT 0 CHECK (intentos >= 0),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (usuario_id, proposito)
+);
+
+CREATE INDEX IF NOT EXISTS idx_auth_email_codes_expira
+  ON auth_email_codes (expira_at);
 
 -- Los correos no distinguen mayúsculas/minúsculas y se guardan normalizados
 -- desde el backend. Esta restricción también protege las cuentas ya existentes.
