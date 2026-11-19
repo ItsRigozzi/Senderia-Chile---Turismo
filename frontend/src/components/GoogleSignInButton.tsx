@@ -103,7 +103,7 @@ const GoogleSignInButton: FC<GoogleSignInButtonProps> = ({ onCredential, onError
   }, [clientId]);
 
   if (!clientId) {
-    return <p className="auth-setup-note">Para habilitar Google, configura VITE_GOOGLE_CLIENT_ID en frontend/.env.local.</p>;
+    return <p className="auth-setup-note">Para habilitar Google, configura GOOGLE_CLIENT_ID en el archivo .env (Docker) o VITE_GOOGLE_CLIENT_ID en frontend/.env.local.</p>;
   }
 
   return <div className="google-signin-container" ref={buttonRef} aria-label="Iniciar sesión con Google" />;
