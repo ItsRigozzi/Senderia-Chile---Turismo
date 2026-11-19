@@ -1,0 +1,95 @@
+# =========================================
+# Sendería Chile - Despliegue local con Docker
+#
+#   docker compose up --build
+#
+#   Aplicación:  http://localhost:8100
+#   API:         http://localhost:3000/api
+#
+# Todas las variables son opcionales. Para cambiarlas, copia .env.example
+# como .env (en esta misma carpeta) y edita los valores.
+# =========================================
+
+services:
+  # 🗄️ Base de datos PostgreSQL
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: senderia
+      POSTGRES_USER: senderia
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-senderia_local}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      # Solo la primera vez (base vacía) se ejecutan en orden: esquema, datos de muestra y catálogo SERNATUR.
+      - ./backend/src/db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./backend/src/db/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+      - ./backend/src/db/sernatur_carga_unica.sql:/docker-entrypoint-initdb.d/03-sernatur.sql:ro
+    ports:
+      # Solo accesible desde tu computador (útil para pgAdmin). 5433 evita choques con un PostgreSQL local.
+      - "127.0.0.1:${DB_HOST_PORT:-5433}:5432"
+    healthcheck:
+      # -h 127.0.0.1 hace que espere a que terminen los scripts de carga inicial.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U senderia -d senderia"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 30s
+
+  # ⚙️ API REST (Express)
+  api:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3000
+      NODE_ENV: ${NODE_ENV:-development}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: senderia
+      DB_USER: senderia
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-senderia_local}
+      DB_SSL: "false"
+      # Si queda vacío, se genera uno aleatorio en cada inicio.
+      JWT_SECRET: ${JWT_SECRET:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8100}
+      # Cuenta administradora que se crea (o actualiza) al iniciar.
+      ADMIN_NAME: ${ADMIN_NAME:-Administrador Senderia}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@senderia.cl}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-SenderiaAdmin2026}
+      # Opcionales: sin ellos la app funciona igual.
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GEOAPIFY_API_KEY: ${GEOAPIFY_API_KEY:-}
+      # Sin SMTP_USER/SMTP_PASS, los códigos de correo aparecen en los logs: docker compose logs api
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      AUTH_EMAIL_CODE_TTL_MINUTES: ${AUTH_EMAIL_CODE_TTL_MINUTES:-10}
+    volumes:
+      - uploads:/app/uploads
+    ports:
+      - "${API_HOST_PORT:-3000}:3000"
+
+  # 📱 Frontend (Ionic + React servido con Nginx)
+  web:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:3000/api}
+        VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${WEB_HOST_PORT:-8100}:80"
+
+volumes:
+  db-data:
+  uploads:
