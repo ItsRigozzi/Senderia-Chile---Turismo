@@ -14,6 +14,19 @@ export const isEmailDeliveryConfigured = (): boolean => Boolean(
   && process.env.SMTP_PASS?.trim(),
 );
 
+/**
+ * Modo desarrollo: sin SMTP configurado y fuera de producción, los códigos se
+ * muestran en la consola del backend en vez de enviarse por correo. Así el
+ * registro y la recuperación funcionan sin configurar Gmail. En producción
+ * (NODE_ENV=production) nunca se imprimen códigos.
+ */
+export const isEmailConsoleMode = (): boolean =>
+  !isEmailDeliveryConfigured() && process.env.NODE_ENV !== 'production';
+
+/** Indica si los códigos por correo pueden entregarse (por SMTP o por consola). */
+export const canDeliverAuthEmails = (): boolean =>
+  isEmailDeliveryConfigured() || isEmailConsoleMode();
+
 const createTransport = () => {
   if (!isEmailDeliveryConfigured()) {
     throw new Error('SMTP no está configurado. Completa SMTP_HOST, SMTP_USER y SMTP_PASS en backend/.env.');
@@ -44,6 +57,13 @@ const sendCodeEmail = async (
 ): Promise<void> => {
   const minutes = AUTH_EMAIL_CODE_TTL_MINUTES;
   const isVerification = purpose === 'verificacion';
+
+  if (isEmailConsoleMode()) {
+    const label = isVerification ? 'verificación de correo' : 'recuperación de contraseña';
+    console.log(`\n[MODO DESARROLLO] Código de ${label} para ${email}: ${codigo} (vence en ${minutes} minutos)\n`);
+    return;
+  }
+
   const action = isVerification ? 'verificar tu correo' : 'cambiar tu contraseña';
   const subject = isVerification ? 'Verifica tu correo | Sendería Chile' : 'Recupera tu contraseña | Sendería Chile';
   const safeName = escapeHtml(nombre);

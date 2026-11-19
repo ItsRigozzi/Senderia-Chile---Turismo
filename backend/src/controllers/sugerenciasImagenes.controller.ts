@@ -4,7 +4,7 @@ import { sugerenciasImagenesDirectory } from '../config/uploads.js';
 import { removeUploadedFile } from '../middleware/uploadSugerenciaImagen.js';
 import * as sugerenciasService from '../services/sugerenciasImagenes.service.js';
 
-const parseId = (value: string, res: Response): number | undefined => {
+const parseId = (value: unknown, res: Response): number | undefined => {
   const parsed = idParamSchema.safeParse(value);
   if (!parsed.success) {
     res.status(400).json({ error: 'El ID debe ser un entero positivo.' });
