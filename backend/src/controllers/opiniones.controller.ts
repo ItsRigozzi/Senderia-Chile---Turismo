@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { idParamSchema, opinionSchema } from '../validators/schemas.js';
 import * as opinionesService from '../services/opiniones.service.js';
 
-const parseDestinationId = (value: string, res: Response): number | undefined => {
+const parseDestinationId = (value: unknown, res: Response): number | undefined => {
   const parsed = idParamSchema.safeParse(value);
   if (!parsed.success) {
     res.status(400).json({ error: 'El ID del destino debe ser un entero positivo' });

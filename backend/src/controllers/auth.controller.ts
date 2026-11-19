@@ -24,7 +24,7 @@ import {
   issueAuthEmailCode,
 } from '../services/authCodes.service.js';
 import {
-  isEmailDeliveryConfigured,
+  canDeliverAuthEmails,
   sendPasswordResetCodeEmail,
   sendVerificationCodeEmail,
 } from '../services/email.service.js';
@@ -80,7 +80,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     res.status(400).json({ error: 'Datos inválidos', detalles: parsed.error.flatten().fieldErrors });
     return;
   }
-  if (!isEmailDeliveryConfigured()) {
+  if (!canDeliverAuthEmails()) {
     emailDeliveryUnavailable(res);
     return;
   }
@@ -201,7 +201,7 @@ export const resendVerificationCode = async (req: Request, res: Response): Promi
     res.status(400).json({ error: 'Ingresa un correo válido.', detalles: parsed.error.flatten().fieldErrors });
     return;
   }
-  if (!isEmailDeliveryConfigured()) {
+  if (!canDeliverAuthEmails()) {
     emailDeliveryUnavailable(res);
     return;
   }
@@ -277,7 +277,7 @@ export const requestPasswordReset = async (req: Request, res: Response): Promise
     res.status(400).json({ error: 'Ingresa un correo válido.', detalles: parsed.error.flatten().fieldErrors });
     return;
   }
-  if (!isEmailDeliveryConfigured()) {
+  if (!canDeliverAuthEmails()) {
     emailDeliveryUnavailable(res);
     return;
   }

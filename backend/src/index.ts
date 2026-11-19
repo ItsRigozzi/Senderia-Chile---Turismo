@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import pool from './config/db.js';
 import { createAdminSchema } from './validators/schemas.js';
 import { configureAdmin } from './services/usuarios.service.js';
+import { isEmailConsoleMode } from './services/email.service.js';
 
 import authRoutes from './routes/auth.routes.js';
 import destinosRoutes from './routes/destinos.routes.js';
@@ -39,10 +40,23 @@ const missingEnv = requiredEnv.filter((key) => !process.env[key]);
 if (missingEnv.length) throw new Error(`Faltan variables requeridas: ${missingEnv.join(', ')}`);
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
+// 0.0.0.0 permite conexiones desde fuera del contenedor Docker.
+const HOST = process.env.HOST?.trim() || '0.0.0.0';
+
+// Orígenes del frontend autorizados, separados por coma (CORS_ORIGINS en backend/.env).
+const DEFAULT_CORS_ORIGINS = ['http://localhost:5173', 'http://localhost:8100'];
+const corsOrigins = process.env.CORS_ORIGINS
+  ?.split(',')
+  .map((origin) => origin.trim().replace(/\/+$/, ''))
+  .filter(Boolean);
+const allowedOrigins = corsOrigins?.length ? corsOrigins : DEFAULT_CORS_ORIGINS;
+if (allowedOrigins.includes('*')) {
+  throw new Error('CORS_ORIGINS no puede ser "*". Indica los orígenes exactos del frontend, por ejemplo http://localhost:8100.');
+}
 
 // Middlewares globales
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:8100'], // Vite + Ionic dev servers
+  origin: allowedOrigins,
   credentials: true,
 }));
 app.use(express.json());
@@ -88,10 +102,14 @@ app.use((_req, res) => {
 });
 
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, '127.0.0.1', async () => {
+  app.listen(PORT, HOST, async () => {
+    console.log(`CORS habilitado para: ${allowedOrigins.join(', ')}`);
+    if (isEmailConsoleMode()) {
+      console.warn('[MODO DESARROLLO] SMTP no configurado: los códigos de verificación y recuperación se mostrarán en esta consola.');
+    }
     try {
       await pool.query('SELECT 1');
-      console.log(`Servidor Senderia conectado a PostgreSQL en http://localhost:${PORT}`);
+      console.log(`Servidor Senderia conectado a PostgreSQL en http://localhost:${PORT} (escuchando en ${HOST})`);
     } catch (error) {
       console.error('PostgreSQL no está disponible. Las rutas persistentes responderán 503.', error instanceof Error ? error.message : error);
     }
