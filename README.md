@@ -65,7 +65,8 @@ docker compose ps
 | Rol | Correo | Contraseña |
 |---|---|---|
 | Administrador | `admin@senderia.cl` | `SenderiaAdmin2026` |
-| Turista | Crear en **Registrarse** | Mínimo 8 caracteres |
+| Turista (ya verificado) | `turista@senderia.cl` | `Turista2026` |
+| Turista nuevo | Crear en **Registrarse** | Mínimo 8 caracteres, con letras y números |
 
 ### 6. Código de verificación (registro y recuperación de contraseña)
 
@@ -143,3 +144,4 @@ El archivo `.env` no se sube a GitHub.
 | Un servicio no queda `healthy` | Revisa `docker compose logs` y luego `docker compose down -v` y `docker compose up --build -d`. |
 | No llega el código | Míralo con `docker compose logs api`. |
 | No aparece el botón de Google | Falta `GOOGLE_CLIENT_ID` en `.env`. |
+| Errores de base de datos después de actualizar el proyecto | La base de Docker es de una versión anterior. Ejecuta `docker compose down -v` y `docker compose up --build -d` (borra los datos de prueba), o actualízala sin perder datos con las instrucciones de `backend/README.md`. |

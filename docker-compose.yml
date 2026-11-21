@@ -21,7 +21,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-senderia_local}
     volumes:
       - db-data:/var/lib/postgresql/data
-      # Solo la primera vez (base vacía) se ejecutan en orden: esquema, datos de muestra y catálogo SERNATUR.
+      # Solo la primera vez (base vacía) se ejecutan en orden: migraciones (sin efecto en una base nueva),
+      # esquema, datos de muestra y catálogo SERNATUR.
+      - ./backend/src/db/migraciones.sql:/docker-entrypoint-initdb.d/00-migraciones.sql:ro
       - ./backend/src/db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
       - ./backend/src/db/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
       - ./backend/src/db/sernatur_carga_unica.sql:/docker-entrypoint-initdb.d/03-sernatur.sql:ro
@@ -55,11 +57,15 @@ services:
       DB_SSL: "false"
       # Si queda vacío, se genera uno aleatorio en cada inicio.
       JWT_SECRET: ${JWT_SECRET:-}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8100}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8100,http://127.0.0.1:8100}
       # Cuenta administradora que se crea (o actualiza) al iniciar.
       ADMIN_NAME: ${ADMIN_NAME:-Administrador Senderia}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@senderia.cl}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-SenderiaAdmin2026}
+      # Cuenta turista ya verificada para probar la app y la colección Postman sin buscar códigos.
+      DEMO_TOURIST_NAME: ${DEMO_TOURIST_NAME:-Turista Demo}
+      DEMO_TOURIST_EMAIL: ${DEMO_TOURIST_EMAIL:-turista@senderia.cl}
+      DEMO_TOURIST_PASSWORD: ${DEMO_TOURIST_PASSWORD:-Turista2026}
       # Opcionales: sin ellos la app funciona igual.
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GEOAPIFY_API_KEY: ${GEOAPIFY_API_KEY:-}
