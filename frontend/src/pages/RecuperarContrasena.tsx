@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import BrandLink from '../components/BrandLink';
 import PasswordInput from '../components/PasswordInput';
 import { authService } from '../services/api';
-import { getApiErrorBody } from '../services/apiError';
+import { getApiErrorBody, getApiErrorMessage } from '../services/apiError';
 
 const RecuperarContrasena: React.FC = () => {
   const navigate = useNavigate();
@@ -26,7 +26,7 @@ const RecuperarContrasena: React.FC = () => {
       setNotice(response.data.mensaje);
       setStep('reset');
     } catch (err: unknown) {
-      setError(getApiErrorBody(err)?.error || 'No se pudo solicitar el código.');
+      setError(getApiErrorMessage(err, 'No se pudo solicitar el código.'));
     } finally {
       setLoading(false);
     }
@@ -39,8 +39,12 @@ const RecuperarContrasena: React.FC = () => {
       setError('Las contraseñas no coinciden.');
       return;
     }
-    if (!/[A-Za-z0-9]/.test(password)) {
-      setError('La contraseña debe incluir al menos una letra o un número.');
+    if (password.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres.');
+      return;
+    }
+    if (!/\p{L}/u.test(password) || !/\d/.test(password)) {
+      setError('La contraseña debe incluir al menos una letra y un número.');
       return;
     }
     setLoading(true);
@@ -54,7 +58,7 @@ const RecuperarContrasena: React.FC = () => {
       if (body?.detalles) {
         setError(Object.values(body.detalles).flat().join('. ') || body.error || 'Revisa los datos ingresados.');
       } else {
-        setError(body?.error || 'No se pudo actualizar la contraseña.');
+        setError(getApiErrorMessage(err, 'No se pudo actualizar la contraseña.'));
       }
     } finally {
       setLoading(false);
@@ -68,7 +72,7 @@ const RecuperarContrasena: React.FC = () => {
       const response = await authService.requestPasswordReset(email.trim());
       setNotice(response.data.mensaje);
     } catch (err: unknown) {
-      setError(getApiErrorBody(err)?.error || 'No se pudo solicitar otro código.');
+      setError(getApiErrorMessage(err, 'No se pudo solicitar otro código.'));
     } finally {
       setLoading(false);
     }
@@ -112,7 +116,7 @@ const RecuperarContrasena: React.FC = () => {
                 <div className="input-group">
                   <label className="input-label" htmlFor="new-password">Nueva contraseña</label>
                   <PasswordInput id="new-password" className="input-control" value={password} onChange={(event) => setPassword(event.target.value)} minLength={8} autoComplete="new-password" required placeholder="Mínimo 8 caracteres" />
-                  <small>Debe tener al menos 8 caracteres e incluir una letra o un número.</small>
+                  <small>Debe tener al menos 8 caracteres e incluir al menos una letra y un número.</small>
                 </div>
                 <div className="input-group">
                   <label className="input-label" htmlFor="confirm-new-password">Confirmar contraseña</label>

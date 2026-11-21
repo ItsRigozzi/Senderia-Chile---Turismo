@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import BrandLink from '../components/BrandLink';
 import { useAuth } from '../context/useAuth';
 import { authService } from '../services/api';
-import { getApiErrorBody } from '../services/apiError';
+import { getApiErrorMessage } from '../services/apiError';
 import { getAuthReturnPath } from '../utils/navigation';
 
 const VerificarCorreo: React.FC = () => {
@@ -26,7 +26,7 @@ const VerificarCorreo: React.FC = () => {
       await verifyEmail(email.trim(), codigo.trim());
       navigate(getAuthReturnPath(location.state, location.search), { replace: true });
     } catch (err: unknown) {
-      setError(getApiErrorBody(err)?.error || 'No se pudo verificar el correo. Intenta nuevamente.');
+      setError(getApiErrorMessage(err, 'No se pudo verificar el correo. Intenta nuevamente.'));
     } finally {
       setLoading(false);
     }
@@ -39,7 +39,7 @@ const VerificarCorreo: React.FC = () => {
       const response = await authService.resendVerificationCode(email.trim());
       setNotice(response.data.mensaje);
     } catch (err: unknown) {
-      setError(getApiErrorBody(err)?.error || 'No se pudo reenviar el código.');
+      setError(getApiErrorMessage(err, 'No se pudo reenviar el código.'));
     } finally {
       setLoading(false);
     }

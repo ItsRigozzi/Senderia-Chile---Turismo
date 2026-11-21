@@ -8,7 +8,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { destinosService, favoritosService, publicAssetUrl, sugerenciasImagenesService } from '../services/api';
 import type { ImagenComunidad } from '../services/api';
 import { useAuth } from '../context/useAuth';
-import { getApiErrorBody } from '../services/apiError';
+import { getApiErrorMessage } from '../services/apiError';
 import BrandLink from '../components/BrandLink';
 import OpinionesDestino from '../components/OpinionesDestino';
 import SugerenciasImagenesDestino from '../components/SugerenciasImagenesDestino';
@@ -55,7 +55,7 @@ const DestinoDetalle: React.FC = () => {
           return;
         }
       } catch (err: unknown) {
-        setError(getApiErrorBody(err)?.error || 'No se pudo cargar el destino desde el backend.');
+        setError(getApiErrorMessage(err, 'No se pudo cargar el destino desde el backend.'));
         setLoading(false);
         return;
       }
@@ -75,7 +75,7 @@ const DestinoDetalle: React.FC = () => {
       .catch((err: unknown) => {
         if (activo) {
           setImagenesComunidad([]);
-          setErrorImagenes(getApiErrorBody(err)?.error || 'No se pudieron cargar las imágenes aportadas.');
+          setErrorImagenes(getApiErrorMessage(err, 'No se pudieron cargar las imágenes aportadas.'));
         }
       });
     return () => { activo = false; };
@@ -115,7 +115,7 @@ const DestinoDetalle: React.FC = () => {
       setIsFavorite(true);
       setFavMsg('¡Agregado a favoritos!');
     } catch (err: unknown) {
-      const message = getApiErrorBody(err)?.error || 'Error al agregar a favoritos';
+      const message = getApiErrorMessage(err, 'Error al agregar a favoritos');
       if (message.toLowerCase().includes('ya está en tus favoritos')) setIsFavorite(true);
       setFavMsg(message);
     }

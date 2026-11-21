@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { IonSpinner } from '@ionic/react';
 import { useNavigate } from 'react-router-dom';
 import { opinionesService, type OpinionDestino, type OpinionResumen } from '../services/api';
-import { getApiErrorBody } from '../services/apiError';
+import { getApiErrorMessage } from '../services/apiError';
 import { useAuth } from '../context/useAuth';
 
 interface OpinionesDestinoProps {
@@ -54,7 +54,7 @@ const OpinionesDestino: React.FC<OpinionesDestinoProps> = ({ destinoId }) => {
       })
       .catch((err: unknown) => {
         if (active) {
-          setError(getApiErrorBody(err)?.error || 'No se pudieron cargar las calificaciones.');
+          setError(getApiErrorMessage(err, 'No se pudieron cargar las calificaciones.'));
         }
       })
       .finally(() => {
@@ -86,7 +86,7 @@ const OpinionesDestino: React.FC<OpinionesDestinoProps> = ({ destinoId }) => {
         setComentario(opinion?.comentario ?? '');
       })
       .catch((err: unknown) => {
-        if (active) setError(getApiErrorBody(err)?.error || 'No se pudo cargar tu calificación.');
+        if (active) setError(getApiErrorMessage(err, 'No se pudo cargar tu calificación.'));
       });
 
     return () => { active = false; };
@@ -110,7 +110,7 @@ const OpinionesDestino: React.FC<OpinionesDestinoProps> = ({ destinoId }) => {
       setMensaje(miOpinion ? 'Tu calificación se actualizó.' : 'Tu calificación se guardó.');
       setReloadKey((current) => current + 1);
     } catch (err: unknown) {
-      setError(getApiErrorBody(err)?.error || 'No se pudo guardar tu calificación.');
+      setError(getApiErrorMessage(err, 'No se pudo guardar tu calificación.'));
     } finally {
       setSaving(false);
     }

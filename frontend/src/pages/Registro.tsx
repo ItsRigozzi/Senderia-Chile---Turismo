@@ -4,7 +4,7 @@ import {
 } from '@ionic/react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
-import { getApiErrorBody } from '../services/apiError';
+import { getApiErrorBody, getApiErrorMessage } from '../services/apiError';
 import BrandLink from '../components/BrandLink';
 import PasswordInput from '../components/PasswordInput';
 
@@ -35,8 +35,8 @@ const Registro: React.FC = () => {
       return;
     }
 
-    if (!/[a-zA-Z0-9]/.test(password)) {
-      setError('La contraseña debe incluir al menos una letra o un número');
+    if (!/\p{L}/u.test(password) || !/\d/.test(password)) {
+      setError('La contraseña debe incluir al menos una letra y un número');
       return;
     }
 
@@ -71,7 +71,7 @@ const Registro: React.FC = () => {
         const mensajes = Object.values(detalles).flat().join('. ');
         setError(mensajes || 'Datos inválidos');
       } else {
-        const msg = response?.error || 'Error al registrarse';
+        const msg = getApiErrorMessage(err, 'No se pudo crear la cuenta. Intenta nuevamente.');
         setError(msg);
       }
     } finally {
@@ -149,7 +149,7 @@ const Registro: React.FC = () => {
                 <PasswordInput
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Mínimo 8 caracteres; incluye una letra o número"
+                  placeholder="Mínimo 8 caracteres, con letras y números"
                   minLength={8}
                   pattern=".*[A-Za-z0-9].*"
                   autoComplete="new-password"

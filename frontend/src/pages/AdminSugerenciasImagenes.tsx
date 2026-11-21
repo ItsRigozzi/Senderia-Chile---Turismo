@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { IonContent, IonHeader, IonPage, IonSpinner, IonToolbar } from '@ionic/react';
-import { useNavigate } from 'react-router-dom';
 import { sugerenciasImagenesService } from '../services/api';
 import type { SugerenciaImagenAdmin } from '../services/api';
-import { getApiErrorBody } from '../services/apiError';
-import { useAuth } from '../context/useAuth';
+import { getApiErrorMessage } from '../services/apiError';
 import BrandLink from '../components/BrandLink';
+import AdminNav from '../components/AdminNav';
 import AdminSugerenciaImagenCard from '../components/AdminSugerenciaImagenCard';
 
 const AdminSugerenciasImagenes: React.FC = () => {
@@ -15,8 +14,6 @@ const AdminSugerenciasImagenes: React.FC = () => {
   const [error, setError] = useState('');
   const [aviso, setAviso] = useState('');
   const [procesandoId, setProcesandoId] = useState<number | null>(null);
-  const navigate = useNavigate();
-  const { logout } = useAuth();
 
   const cargarSugerencias = useCallback(async (refresh = false) => {
     setCargando(!refresh);
@@ -26,7 +23,7 @@ const AdminSugerenciasImagenes: React.FC = () => {
       const response = await sugerenciasImagenesService.getPending();
       setSugerencias(response.data.sugerencias || []);
     } catch (err: unknown) {
-      setError(getApiErrorBody(err)?.error || 'No se pudieron cargar las imágenes sugeridas.');
+      setError(getApiErrorMessage(err, 'No se pudieron cargar las imágenes sugeridas.'));
     } finally {
       setCargando(false);
       setActualizando(false);
@@ -44,7 +41,7 @@ const AdminSugerenciasImagenes: React.FC = () => {
       setSugerencias((actuales) => actuales.filter((sugerencia) => sugerencia.id !== id));
       setAviso(response.data?.mensaje || (decision === 'aprobada' ? 'Imagen aprobada y publicada.' : 'Imagen rechazada.'));
     } catch (err: unknown) {
-      setError(getApiErrorBody(err)?.error || 'No se pudo guardar la decisión.');
+      setError(getApiErrorMessage(err, 'No se pudo guardar la decisión.'));
     } finally {
       setProcesandoId(null);
     }
@@ -59,20 +56,7 @@ const AdminSugerenciasImagenes: React.FC = () => {
       </IonHeader>
       <IonContent>
         <div className="admin-layout">
-          <aside className="admin-sidebar" aria-label="Navegación de administración">
-            <button type="button" className="admin-nav-item" onClick={() => navigate('/admin/dashboard')}>
-              ← Destinos
-            </button>
-            <button type="button" className="admin-nav-item active" aria-current="page">
-              Imágenes sugeridas
-            </button>
-            <button type="button" className="admin-nav-item" onClick={() => navigate('/explorar')}>
-              Volver a la aplicación ↗
-            </button>
-            <button type="button" className="admin-nav-item" onClick={() => { logout(); window.location.replace('/login'); }}>
-              Cerrar sesión
-            </button>
-          </aside>
+          <AdminNav />
 
           <main className="admin-main">
             <div className="admin-header-row admin-suggestions-page-header">

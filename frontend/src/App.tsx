@@ -23,7 +23,10 @@ import DestinoDetalle from './pages/DestinoDetalle';
 import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminSugerenciasImagenes from './pages/AdminSugerenciasImagenes';
+import AdminCategorias from './pages/AdminCategorias';
+import AdminUsuarios from './pages/AdminUsuarios';
 import ProtectedRoute from './routes/ProtectedRoute';
+import SessionExpiredRedirect from './components/SessionExpiredRedirect';
 
 import Registro from './pages/Registro';
 import VerificarCorreo from './pages/VerificarCorreo';
@@ -38,6 +41,7 @@ const App: React.FC = () => {
     <AuthProvider>
       <IonApp>
         <IonReactRouter>
+          <SessionExpiredRedirect />
           <IonRouterOutlet>
             {/* Rutas Públicas */}
             <Route path="/explorar" element={<Explorar />} />
@@ -56,6 +60,22 @@ const App: React.FC = () => {
                   <AdminDashboard />
                 </ProtectedRoute>
               } 
+            />
+            <Route
+              path="/admin/categorias"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminCategorias />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/usuarios"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminUsuarios />
+                </ProtectedRoute>
+              }
             />
             <Route
               path="/admin/sugerencias-imagenes"

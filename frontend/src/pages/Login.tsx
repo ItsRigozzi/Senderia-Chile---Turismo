@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   IonPage, IonHeader, IonToolbar, IonContent, IonLoading
 } from '@ionic/react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
-import { getApiErrorBody } from '../services/apiError';
+import { getApiErrorBody, getApiErrorMessage } from '../services/apiError';
 import { getAuthReturnPath } from '../utils/navigation';
+import { clearLoginNotice, peekLoginNotice } from '../utils/loginNotice';
 import BrandLink from '../components/BrandLink';
 import PasswordInput from '../components/PasswordInput';
 import GoogleSignInButton from '../components/GoogleSignInButton';
@@ -18,8 +19,18 @@ const Login: React.FC = () => {
   const [verificationEmail, setVerificationEmail] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
-  const [notice] = useState(() => (location.state as { notice?: string } | null)?.notice || '');
+  const [notice, setNotice] = useState(
+    () => (location.state as { notice?: string } | null)?.notice || peekLoginNotice(),
+  );
   const { login, loginWithGoogle } = useAuth();
+
+  // Ionic puede reutilizar esta pantalla ya montada: se actualiza el aviso en cada llegada al login.
+  useEffect(() => {
+    if (location.pathname !== '/login') return;
+    const nuevoAviso = (location.state as { notice?: string } | null)?.notice || peekLoginNotice();
+    if (nuevoAviso) setNotice(nuevoAviso);
+    clearLoginNotice();
+  }, [location.key, location.pathname, location.state]);
 
   const handleLogin = async () => {
     setVerificationEmail('');
@@ -30,6 +41,7 @@ const Login: React.FC = () => {
 
     setLoading(true);
     setError('');
+    setNotice('');
 
     try {
       await login(email, password);
@@ -44,7 +56,7 @@ const Login: React.FC = () => {
         const mensajes = Object.values(detalles).flat().join('. ');
         setError(mensajes || 'Datos inválidos');
       } else {
-        const msg = response?.error || 'Error al iniciar sesión';
+        const msg = getApiErrorMessage(err, 'No se pudo iniciar sesión. Intenta nuevamente.');
         setError(msg);
       }
     } finally {
@@ -60,8 +72,7 @@ const Login: React.FC = () => {
       await loginWithGoogle(credential);
       navigate(getAuthReturnPath(location.state, location.search), { replace: true });
     } catch (err: unknown) {
-      const response = getApiErrorBody(err);
-      setError(response?.error || 'No se pudo iniciar sesión con Google. Intenta nuevamente.');
+      setError(getApiErrorMessage(err, 'No se pudo iniciar sesión con Google. Intenta nuevamente.'));
     } finally {
       setLoading(false);
     }

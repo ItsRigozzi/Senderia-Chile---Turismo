@@ -5,12 +5,25 @@ const API_ORIGIN = /^https?:\/\//i.test(API_BASE_URL) ? new URL(API_BASE_URL).or
 
 export const publicAssetUrl = (path: string): string => `${API_ORIGIN}${path}`;
 
+// Tiempo máximo de espera: si el backend no responde, se informa al usuario en vez de quedar cargando.
+const REQUEST_TIMEOUT_MS = 15000;
+const UPLOAD_TIMEOUT_MS = 60000;
+
 export const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: REQUEST_TIMEOUT_MS,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+/** Evento que avisa a la app que la sesión expiró (lo escuchan AuthContext y el router). */
+export const SESSION_EXPIRED_EVENT = 'senderia:session-expired';
+export interface SessionExpiredDetail {
+  returnTo: string;
+}
+
+const AUTH_PAGES = ['/login', '/registro', '/verificar-correo', '/recuperar-contrasena'];
 
 // Interceptor: agrega JWT a cada request si existe
 api.interceptors.request.use((config) => {
@@ -31,10 +44,11 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !isPublicAuthEndpoint) {
       localStorage.removeItem('senderia_token');
       localStorage.removeItem('senderia_user');
-      if (!['/login', '/registro', '/verificar-correo', '/recuperar-contrasena'].includes(window.location.pathname)) {
-        const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-        window.location.assign(`/login?returnTo=${encodeURIComponent(currentPath)}`);
-      }
+      // Se avisa a React para navegar al login sin recargar toda la aplicación.
+      const returnTo = AUTH_PAGES.includes(window.location.pathname)
+        ? ''
+        : `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      window.dispatchEvent(new CustomEvent<SessionExpiredDetail>(SESSION_EXPIRED_EVENT, { detail: { returnTo } }));
     }
     return Promise.reject(error);
   }
@@ -139,6 +153,7 @@ export const sugerenciasImagenesService = {
   submit: (destinoId: number, formData: FormData) =>
     api.post(`/destinos/${destinoId}/sugerencias-imagenes`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: UPLOAD_TIMEOUT_MS,
     }),
 
   getPending: () =>
@@ -180,11 +195,19 @@ export const categoriasService = {
 };
 
 // ---- Usuarios ----
-export const usuariosService = {
-  getAll: () => api.get('/usuarios'),
+export interface UsuarioAdmin {
+  id: number;
+  nombre: string;
+  email: string;
+  rol: 'turista' | 'admin';
+  created_at: string;
+}
 
-  update: (id: number, data: { rol?: string; nombre?: string }) =>
-    api.patch(`/usuarios/${id}`, data),
+export const usuariosService = {
+  getAll: () => api.get<{ usuarios: UsuarioAdmin[] }>('/usuarios'),
+
+  update: (id: number, data: { rol?: 'turista' | 'admin'; nombre?: string }) =>
+    api.patch<{ usuario: UsuarioAdmin }>(`/usuarios/${id}`, data),
 
   delete: (id: number) =>
     api.delete(`/usuarios/${id}`),
