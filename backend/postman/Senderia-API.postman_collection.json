@@ -1,0 +1,3102 @@
+{
+  "info": {
+    "name": "Sendería Chile - API REST",
+    "description": "Colección de pruebas y documentación de la API REST de Sendería Chile (Express + PostgreSQL).\n\n**Cómo ejecutarla**\n1. Levanta el proyecto con `docker compose up --build -d` (crea el admin y el turista de demostración).\n2. Importa esta colección y el entorno `Senderia-local.postman_environment.json`, y selecciona el entorno.\n3. En *Settings → General → Working directory* elige la carpeta `backend/postman` (para la imagen de prueba).\n4. Ejecuta la colección completa en orden (*Run collection*). Crea datos temporales y los elimina al final.\n\nCon Newman: `npx newman run Senderia-API.postman_collection.json -e Senderia-local.postman_environment.json --working-dir .` (desde `backend/postman`).\n\nCada solicitud documenta el acceso, el cuerpo, la respuesta exitosa y los errores posibles. Todas las respuestas son JSON (salvo los archivos de imagen).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "0. Estado y seguridad general",
+      "item": [
+        {
+          "name": "Estado de la API y PostgreSQL",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('PostgreSQL conectado', () => pm.expect(pm.response.json().database).to.eql('connected'));",
+                  "pm.test('Cabeceras de seguridad (helmet)', () => { pm.expect(pm.response.headers.has('X-Powered-By')).to.be.false; pm.expect(pm.response.headers.get('X-Content-Type-Options')).to.eql('nosniff'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Comprueba que la API responde y que PostgreSQL está conectado.\n\n**Acceso:** Público\n\n**Respuesta exitosa:**\n```\n200 { \"status\": \"ok\", \"database\": \"connected\", \"timestamp\": \"2026-11-21T19:34:01.904Z\" }\n```\n\n**Errores posibles:**\n- 503 `{ \"status\": \"degraded\", \"database\": \"unavailable\" }` si PostgreSQL no responde"
+          },
+          "response": []
+        },
+        {
+          "name": "Ruta inexistente responde 404 en JSON",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ruta-que-no-existe",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ruta-que-no-existe"
+              ]
+            },
+            "description": "Toda ruta desconocida responde JSON, nunca HTML.\n\n**Acceso:** Público\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 404 `{ \"error\": \"Ruta no encontrada\" }`"
+          },
+          "response": []
+        },
+        {
+          "name": "JSON malformado responde 400 sin stack trace",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);",
+                  "pm.test('No expone el stack trace', () => pm.expect(pm.response.text()).to.not.match(/node_modules|at \\w+ \\(/));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\": \"x\",",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "El manejador global de errores convierte un cuerpo JSON inválido en un 400 en JSON, sin exponer rutas internas ni el stack trace.\n\n**Acceso:** Público\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 400 `{ \"error\": \"El cuerpo de la solicitud no es un JSON válido.\" }`"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "1. Autenticación",
+      "item": [
+        {
+          "name": "Login administrador",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json(); pm.test('Entrega token y rol admin', () => { pm.expect(j.token).to.be.a('string'); pm.expect(j.usuario.rol).to.eql('admin'); }); pm.collectionVariables.set('adminToken', j.token); pm.collectionVariables.set('adminId', j.usuario.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Inicia sesión con correo y contraseña y entrega el JWT de Sendería (expira en 24 h).\n\n**Acceso:** Público\n\n**Cuerpo:**\n```\n{ \"email\": \"admin@senderia.cl\", \"password\": \"SenderiaAdmin2026\" }\n```\n\n**Respuesta exitosa:**\n```\n200 { \"mensaje\": \"Inicio de sesión exitoso\", \"usuario\": { \"id\": 1, \"nombre\": \"…\", \"email\": \"…\", \"rol\": \"admin\" }, \"token\": \"eyJ…\" }\n```\n\n**Errores posibles:**\n- 400 datos inválidos (`detalles` por campo)\n- 401 credenciales incorrectas\n- 403 `EMAIL_NOT_VERIFIED` correo sin verificar\n- 429 `LOGIN_ATTEMPTS_EXCEEDED` tras 5 intentos fallidos (bloqueo de 15 min, cabecera `Retry-After`)"
+          },
+          "response": []
+        },
+        {
+          "name": "Login turista de demostración",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json(); pm.test('Rol turista', () => pm.expect(j.usuario.rol).to.eql('turista')); pm.collectionVariables.set('turistaToken', j.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{turistaEmail}}\",\n  \"password\": \"{{turistaPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Inicia sesión con la cuenta turista ya verificada que crea Docker (`turista@senderia.cl`).\n\n**Acceso:** Público\n\n**Cuerpo:**\n```\n{ \"email\": \"turista@senderia.cl\", \"password\": \"Turista2026\" }\n```\n\n**Respuesta exitosa:**\n```\n200 { \"mensaje\": \"Inicio de sesión exitoso\", \"usuario\": { \"rol\": \"turista\", … }, \"token\": \"eyJ…\" }\n```\n\n**Errores posibles:**\n- 401 credenciales incorrectas"
+          },
+          "response": []
+        },
+        {
+          "name": "Usuario de la sesión actual",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Devuelve el usuario sin hash', () => { const u = pm.response.json().usuario; pm.expect(u.rol).to.eql('admin'); pm.expect(u).to.not.have.property('password_hash'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Devuelve la identidad vigente leída desde PostgreSQL.\n\n**Acceso:** JWT\n\n**Respuesta exitosa:**\n```\n200 { \"usuario\": { \"id\": 1, \"nombre\": \"…\", \"email\": \"…\", \"rol\": \"admin\" } }\n```\n\n**Errores posibles:**\n- 401 sin token, token inválido/expirado o contraseña cambiada después de emitirlo"
+          },
+          "response": []
+        },
+        {
+          "name": "Sesión sin token responde 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Las rutas protegidas exigen `Authorization: Bearer <JWT>`.\n\n**Acceso:** JWT\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 401 `{ \"error\": \"Token de autenticación requerido\" }`"
+          },
+          "response": []
+        },
+        {
+          "name": "Token con algoritmo \"none\" es rechazado",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b = (o) => btoa(JSON.stringify(o)).replace(/=+$/, '').replace(/\\+/g, '-').replace(/\\//g, '_');",
+                  "pm.collectionVariables.set('tokenSinFirma', `${b({ alg: 'none', typ: 'JWT' })}.${b({ userId: 1, email: 'admin@senderia.cl', rol: 'admin' })}.`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenSinFirma}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "description": "La API fija el algoritmo `HS256` al verificar el JWT; un token sin firma no es aceptado.\n\n**Acceso:** JWT\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 401 `{ \"error\": \"Token inválido o expirado\" }`"
+          },
+          "response": []
+        },
+        {
+          "name": "Registro rechaza contraseña débil",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);",
+                  "pm.test('Indica el problema de la contraseña', () => pm.expect(pm.response.json().detalles.password).to.be.an('array').that.is.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Clave débil\",\n  \"email\": \"debil-{{$timestamp}}@example.test\",\n  \"password\": \"aaaaaaaa\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "La contraseña debe tener al menos 8 caracteres, con al menos una letra y un número.\n\n**Acceso:** Público\n\n**Cuerpo:**\n```\n{ \"nombre\": \"Ana\", \"email\": \"ana@example.cl\", \"password\": \"aaaaaaaa\" }\n```\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 400 `{ \"error\": \"Datos inválidos\", \"detalles\": { \"password\": [\"La contraseña debe incluir al menos un número\"] } }`"
+          },
+          "response": []
+        },
+        {
+          "name": "Registrar turista temporal",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('registroEmail', `registro-${Date.now()}@example.test`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', () => pm.response.to.have.status(201));",
+                  "pm.test('No entrega token antes de verificar', () => pm.expect(pm.response.json().token).to.be.undefined);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Turista Postman\",\n  \"email\": \"{{registroEmail}}\",\n  \"password\": \"Postman2026\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Crea una cuenta turista pendiente de verificación y envía un código de 6 dígitos al correo. Sin Gmail configurado (modo desarrollo), el código aparece en `docker compose logs api`. No inicia sesión todavía.\n\n**Acceso:** Público\n\n**Cuerpo:**\n```\n{ \"nombre\": \"Ana Pérez\", \"email\": \"ana@example.cl\", \"password\": \"Clave2026\" }\n```\n\n**Respuesta exitosa:**\n```\n201 { \"mensaje\": \"Cuenta creada. Revisa tu correo e ingresa el código para activar la cuenta.\", \"email\": \"ana@example.cl\" }\n```\n\n**Errores posibles:**\n- 400 datos inválidos\n- 409 `EMAIL_ALREADY_REGISTERED`\n- 503 `SMTP_NOT_CONFIGURED` o `EMAIL_SEND_FAILED` si el correo no se puede enviar en producción"
+          },
+          "response": []
+        },
+        {
+          "name": "Registro duplicado responde 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 409', () => pm.response.to.have.status(409));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Turista Postman\",\n  \"email\": \"{{registroEmail}}\",\n  \"password\": \"Postman2026\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Un correo solo puede registrarse una vez.\n\n**Acceso:** Público\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 409 `{ \"error\": \"El correo ya está registrado\", \"code\": \"EMAIL_ALREADY_REGISTERED\" }`"
+          },
+          "response": []
+        },
+        {
+          "name": "Login sin verificar el correo responde 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 403', () => pm.response.to.have.status(403));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);",
+                  "pm.test('Código EMAIL_NOT_VERIFIED', () => pm.expect(pm.response.json().code).to.eql('EMAIL_NOT_VERIFIED'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{registroEmail}}\",\n  \"password\": \"Postman2026\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Una cuenta con el correo sin verificar no puede iniciar sesión.\n\n**Acceso:** Público\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 403 `{ \"error\": \"Verifica tu correo antes de iniciar sesión.\", \"code\": \"EMAIL_NOT_VERIFIED\" }`"
+          },
+          "response": []
+        },
+        {
+          "name": "Verificar correo con código incorrecto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);",
+                  "pm.test('Código INVALID_CODE', () => pm.expect(pm.response.json().code).to.eql('INVALID_CODE'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{registroEmail}}\",\n  \"codigo\": \"000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-email",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "verify-email"
+              ]
+            },
+            "description": "Activa la cuenta con el código de 6 dígitos y entrega el JWT. Cada código vence en 10 minutos, es de un solo uso y admite 5 intentos.\n\n**Acceso:** Público\n\n**Cuerpo:**\n```\n{ \"email\": \"ana@example.cl\", \"codigo\": \"123456\" }\n```\n\n**Respuesta exitosa:**\n```\n200 { \"mensaje\": \"Correo verificado. Tu cuenta ya está activa.\", \"usuario\": { … }, \"token\": \"eyJ…\" }\n```\n\n**Errores posibles:**\n- 400 `INVALID_CODE` código incorrecto o `CODE_NOT_FOUND`\n- 409 `EMAIL_ALREADY_VERIFIED`\n- 410 `CODE_EXPIRED`\n- 429 `CODE_ATTEMPTS_EXCEEDED`"
+          },
+          "response": []
+        },
+        {
+          "name": "Solicitar recuperación de contraseña",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Mensaje genérico', () => pm.expect(pm.response.json().mensaje).to.include('Si la cuenta'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{turistaEmail}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/password-reset/request",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "password-reset",
+                "request"
+              ]
+            },
+            "description": "Envía un código de recuperación si la cuenta tiene contraseña local. La respuesta es igual exista o no la cuenta, para no revelar qué correos están registrados. Luego se confirma con `POST /auth/password-reset/confirm` `{ email, codigo, password }`.\n\n**Acceso:** Público\n\n**Cuerpo:**\n```\n{ \"email\": \"turista@senderia.cl\" }\n```\n\n**Respuesta exitosa:**\n```\n200 { \"mensaje\": \"Si la cuenta puede recuperar su contraseña, recibirás un código en el correo registrado.\" }\n```\n\n**Errores posibles:**\n- 400 correo inválido"
+          },
+          "response": []
+        },
+        {
+          "name": "Bloqueo tras 5 intentos fallidos de login",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const email = `bloqueo-${Date.now()}@example.test`;",
+                  "pm.collectionVariables.set('bloqueoEmail', email);",
+                  "const intento = (n) => n > 5 ? null : pm.sendRequest({ url: pm.variables.get('baseUrl') + '/auth/login', method: 'POST', header: { 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: JSON.stringify({ email, password: 'incorrecta1' }) } }, () => intento(n + 1));",
+                  "intento(1);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 429', () => pm.response.to.have.status(429));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);",
+                  "pm.test('Incluye Retry-After', () => pm.expect(pm.response.headers.get('Retry-After')).to.be.ok);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{bloqueoEmail}}\",\n  \"password\": \"incorrecta1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Antes de esta solicitud se envían 5 intentos fallidos con el mismo correo; el sexto queda bloqueado 15 minutos.\n\n**Acceso:** Público\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 429 `{ \"error\": \"Demasiados intentos fallidos…\", \"code\": \"LOGIN_ATTEMPTS_EXCEEDED\" }` con cabecera `Retry-After`"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Categorías y regiones",
+      "item": [
+        {
+          "name": "Listar categorías",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Devuelve una lista', () => pm.expect(pm.response.json().categorias).to.be.an('array').that.is.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/categorias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categorias"
+              ]
+            },
+            "description": "Lista las categorías ordenadas por nombre.\n\n**Acceso:** Público\n\n**Respuesta exitosa:**\n```\n200 { \"categorias\": [ { \"id\": 1, \"nombre\": \"Desierto\", \"slug\": \"desierto\", \"descripcion\": \"…\" } ] }\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Listar regiones",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json().regiones; pm.test('16 regiones', () => pm.expect(r.length).to.eql(16)); pm.collectionVariables.set('regionId', r[0].id); pm.collectionVariables.set('regionSlug', r[0].slug);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/categorias/regiones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categorias",
+                "regiones"
+              ]
+            },
+            "description": "Lista las 16 regiones de Chile.\n\n**Acceso:** Público\n\n**Respuesta exitosa:**\n```\n200 { \"regiones\": [ { \"id\": 1, \"nombre\": \"Antofagasta\", \"slug\": \"antofagasta\" } ] }\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Crear categoría temporal (admin)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('categoriaSlug', `postman-${Date.now()}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('categoriaId', pm.response.json().categoria.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Categoría Postman {{categoriaSlug}}\",\n  \"slug\": \"{{categoriaSlug}}\",\n  \"descripcion\": \"Categoría temporal de la colección Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/categorias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categorias"
+              ]
+            },
+            "description": "Crea una categoría. El `slug` solo admite minúsculas, números y guiones.\n\n**Acceso:** Admin\n\n**Cuerpo:**\n```\n{ \"nombre\": \"Miradores\", \"slug\": \"miradores\", \"descripcion\": \"Opcional\" }\n```\n\n**Respuesta exitosa:**\n```\n201 { \"mensaje\": \"Categoría creada exitosamente\", \"categoria\": { \"id\": 9, \"nombre\": \"Miradores\", \"slug\": \"miradores\", \"descripcion\": \"…\" } }\n```\n\n**Errores posibles:**\n- 400 datos inválidos\n- 401 sin token\n- 403 rol no admin\n- 409 nombre o slug ya existe"
+          },
+          "response": []
+        },
+        {
+          "name": "Categoría duplicada responde 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 409', () => pm.response.to.have.status(409));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Categoría Postman {{categoriaSlug}}\",\n  \"slug\": \"{{categoriaSlug}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/categorias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categorias"
+              ]
+            },
+            "description": "No se permiten nombres ni slugs repetidos.\n\n**Acceso:** Admin\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 409 `{ \"error\": \"Ya existe una categoría con ese nombre o slug\" }`"
+          },
+          "response": []
+        },
+        {
+          "name": "Turista no puede crear categorías (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 403', () => pm.response.to.have.status(403));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{turistaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"No permitida\",\n  \"slug\": \"no-permitida\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/categorias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categorias"
+              ]
+            },
+            "description": "El backend valida el rol en cada ruta administrativa.\n\n**Acceso:** Admin\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 403 rol insuficiente"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar categoría (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Descripción actualizada', () => pm.expect(pm.response.json().categoria.descripcion).to.eql('Descripción editada desde Postman'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"descripcion\": \"Descripción editada desde Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/categorias/{{categoriaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categorias",
+                "{{categoriaId}}"
+              ]
+            },
+            "description": "Actualiza uno o más campos de la categoría.\n\n**Acceso:** Admin\n\n**Cuerpo:**\n```\n{ \"descripcion\": \"Nuevo texto\" }\n```\n\n**Respuesta exitosa:**\n```\n200 { \"mensaje\": \"Categoría actualizada exitosamente\", \"categoria\": { … } }\n```\n\n**Errores posibles:**\n- 400 sin campos o datos inválidos\n- 404 no existe\n- 409 nombre o slug repetido"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Destinos",
+      "item": [
+        {
+          "name": "Crear destino temporal (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('destinoId', pm.response.json().destino.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Destino Postman {{categoriaSlug}}\",\n  \"descripcion\": \"Destino temporal de la colección\",\n  \"categoria_id\": {{categoriaId}},\n  \"region_id\": {{regionId}},\n  \"latitud\": -33.45,\n  \"longitud\": -70.66,\n  \"horario\": \"09:00 a 18:00\",\n  \"condiciones_acceso\": \"Acceso libre\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/destinos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "destinos"
+              ]
+            },
+            "description": "Crea un destino. Si se omiten ambas coordenadas, se buscan con Geoapify (requiere `GEOAPIFY_API_KEY`). `imagen_url` acepta solo `http(s)://`, `/images/...` o la ruta de una foto aprobada.\n\n**Acceso:** Admin\n\n**Cuerpo:**\n```\n{ \"nombre\": \"Cerro Santa Lucía\", \"categoria_id\": 5, \"region_id\": 7, \"latitud\": -33.44, \"longitud\": -70.64, \"horario\": \"…\", \"condiciones_acceso\": \"…\", \"imagen_url\": \"https://…\" }\n```\n\n**Respuesta exitosa:**\n```\n201 { \"mensaje\": \"Destino creado exitosamente\", \"destino\": { \"id\": 500, \"nombre\": \"…\", \"activo\": true, … } }\n```\n\n**Errores posibles:**\n- 400 datos inválidos o categoría/región inexistente\n- 401 sin token\n- 403 rol no admin\n- 409 nombre repetido en la región\n- 422 Geoapify no encontró coordenadas\n- 502/503 Geoapify no disponible o no configurado"
+          },
+          "response": []
+        },
+        {
+          "name": "imagen_url con javascript: es rechazada",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);",
+                  "pm.test('El detalle apunta a imagen_url', () => pm.expect(pm.response.json().detalles).to.have.property('imagen_url'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Destino XSS\",\n  \"categoria_id\": {{categoriaId}},\n  \"region_id\": {{regionId}},\n  \"latitud\": -33,\n  \"longitud\": -70,\n  \"imagen_url\": \"javascript:alert(1)\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/destinos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "destinos"
+              ]
+            },
+            "description": "Se rechazan esquemas peligrosos (`javascript:`, `data:`) en la imagen.\n\n**Acceso:** Admin\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 400 `{ \"error\": \"Datos inválidos\", \"detalles\": { \"imagen_url\": [\"…\"] } }`"
+          },
+          "response": []
+        },
+        {
+          "name": "Crear destino sin token (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/destinos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "destinos"
+              ]
+            },
+            "description": "Crear destinos requiere sesión.\n\n**Acceso:** Admin\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 401 sin token"
+          },
+          "response": []
+        },
+        {
+          "name": "Turista no puede crear destinos (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 403', () => pm.response.to.have.status(403));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{turistaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/destinos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "destinos"
+              ]
+            },
+            "description": "Crear destinos requiere rol admin.\n\n**Acceso:** Admin\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 403 rol insuficiente"
+          },
+          "response": []
+        },
+        {
+          "name": "Listar destinos filtrando por categoría y región",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().destinos; pm.test('Incluye el destino creado', () => pm.expect(d.map((x) => x.id)).to.include(pm.collectionVariables.get('destinoId')));",
+                  "pm.test('Todos cumplen ambos filtros', () => d.forEach((x) => { pm.expect(x.categoria_slug).to.eql(pm.collectionVariables.get('categoriaSlug')); pm.expect(x.region_slug).to.eql(pm.collectionVariables.get('regionSlug')); }));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/destinos?categoria={{categoriaSlug}}&region={{regionSlug}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "destinos"
+              ],
+              "query": [
+                {
+                  "key": "categoria",
+                  "value": "{{categoriaSlug}}"
+                },
+                {
+                  "key": "region",
+                  "value": "{{regionSlug}}"
+                }
+              ]
+            },
+            "description": "Lista los destinos activos. Cada filtro acepta varios valores (`?region=a&region=b`): dentro de un filtro aplica OR y entre filtros AND. El filtrado se hace en PostgreSQL.\n\n**Acceso:** Público\n\n**Respuesta exitosa:**\n```\n200 { \"destinos\": [ { \"id\": 500, \"nombre\": \"…\", \"categoria_slug\": \"…\", \"region_slug\": \"…\", \"latitud\": -33.45, \"longitud\": -70.66, … } ], \"source\": \"database\" }\n```\n\n**Errores posibles:**\n- 400 filtro con caracteres no válidos o más de 20 valores"
+          },
+          "response": []
+        },
+        {
+          "name": "Filtro inválido responde 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/destinos?region=Valpara%C3%ADso!",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "destinos"
+              ],
+              "query": [
+                {
+                  "key": "region",
+                  "value": "Valpara%C3%ADso!"
+                }
+              ]
+            },
+            "description": "Los filtros deben ser slugs (minúsculas, números y guiones).\n\n**Acceso:** Público\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 400 `{ \"error\": \"Parámetros de filtro inválidos\", … }`"
+          },
+          "response": []
+        },
+        {
+          "name": "Leer destino por ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Leído desde PostgreSQL', () => pm.expect(pm.response.json().source).to.eql('database'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/destinos/{{destinoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "destinos",
+                "{{destinoId}}"
+              ]
+            },
+            "description": "Ficha de un destino activo.\n\n**Acceso:** Público\n\n**Respuesta exitosa:**\n```\n200 { \"destino\": { \"id\": 500, \"nombre\": \"…\", \"categoria_nombre\": \"…\", \"region_nombre\": \"…\", … }, \"source\": \"database\" }\n```\n\n**Errores posibles:**\n- 400 ID no válido\n- 404 no existe o fue quitado"
+          },
+          "response": []
+        },
+        {
+          "name": "ID de destino no válido (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/destinos/no-es-id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "destinos",
+                "no-es-id"
+              ]
+            },
+            "description": "El ID debe ser un entero positivo.\n\n**Acceso:** Público\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 400 ID no válido"
+          },
+          "response": []
+        },
+        {
+          "name": "Destino inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/destinos/2147483647",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "destinos",
+                "2147483647"
+              ]
+            },
+            "description": "Un ID que no existe responde 404.\n\n**Acceso:** Público\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 404 `{ \"error\": \"Destino no encontrado\" }`"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar destino (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Horario actualizado', () => pm.expect(pm.response.json().destino.horario).to.eql('Todos los días, 08:00 a 20:00'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"horario\": \"Todos los días, 08:00 a 20:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/destinos/{{destinoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "destinos",
+                "{{destinoId}}"
+              ]
+            },
+            "description": "Actualiza uno o más campos.\n\n**Acceso:** Admin\n\n**Cuerpo:**\n```\n{ \"horario\": \"…\" }\n```\n\n**Respuesta exitosa:**\n```\n200 { \"mensaje\": \"Destino actualizado exitosamente\", \"destino\": { … } }\n```\n\n**Errores posibles:**\n- 400 sin campos o datos inválidos\n- 404 no existe\n- 409 nombre repetido en la región"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar sin campos (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/destinos/{{destinoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "destinos",
+                "{{destinoId}}"
+              ]
+            },
+            "description": "Debe enviarse al menos un campo.\n\n**Acceso:** Admin\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 400 sin campos"
+          },
+          "response": []
+        },
+        {
+          "name": "Categoría con destinos activos no se elimina (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 409', () => pm.response.to.have.status(409));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);",
+                  "pm.test('Informa cuántos destinos activos tiene', () => pm.expect(pm.response.json().destinos_asociados).to.eql(1));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/categorias/{{categoriaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categorias",
+                "{{categoriaId}}"
+              ]
+            },
+            "description": "Solo cuentan los destinos activos: los destinos ya quitados no impiden eliminar la categoría.\n\n**Acceso:** Admin\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 409 `{ \"error\": \"No se puede eliminar la categoría porque tiene destinos activos asociados\", \"destinos_asociados\": 1 }`"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Favoritos",
+      "item": [
+        {
+          "name": "Listar favoritos sin sesión (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/favoritos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "favoritos"
+              ]
+            },
+            "description": "Favoritos requiere sesión.\n\n**Acceso:** JWT\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 401 sin token"
+          },
+          "response": []
+        },
+        {
+          "name": "Agregar favorito",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('favoritoId', pm.response.json().favorito.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{turistaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"destino_id\": {{destinoId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/favoritos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "favoritos"
+              ]
+            },
+            "description": "Guarda un destino en los favoritos del usuario de la sesión.\n\n**Acceso:** JWT\n\n**Cuerpo:**\n```\n{ \"destino_id\": 500 }\n```\n\n**Respuesta exitosa:**\n```\n201 { \"mensaje\": \"Destino agregado a favoritos\", \"favorito\": { \"id\": 10, \"usuario_id\": 2, \"destino_id\": 500 } }\n```\n\n**Errores posibles:**\n- 400 destino_id inválido\n- 404 destino no existe\n- 409 ya está en favoritos"
+          },
+          "response": []
+        },
+        {
+          "name": "Favorito duplicado (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 409', () => pm.response.to.have.status(409));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{turistaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"destino_id\": {{destinoId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/favoritos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "favoritos"
+              ]
+            },
+            "description": "Un destino solo puede estar una vez en favoritos.\n\n**Acceso:** JWT\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 409 ya está en favoritos"
+          },
+          "response": []
+        },
+        {
+          "name": "Listar mis favoritos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Incluye el favorito', () => pm.expect(pm.response.json().favoritos.map((f) => f.favorito_id)).to.include(pm.collectionVariables.get('favoritoId')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{turistaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/favoritos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "favoritos"
+              ]
+            },
+            "description": "Favoritos del usuario de la sesión, con los datos del destino.\n\n**Acceso:** JWT\n\n**Respuesta exitosa:**\n```\n200 { \"favoritos\": [ { \"favorito_id\": 10, \"id\": 500, \"nombre\": \"…\", … } ] }\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Quitar favorito",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{turistaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/favoritos/{{favoritoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "favoritos",
+                "{{favoritoId}}"
+              ]
+            },
+            "description": "Quita un favorito propio.\n\n**Acceso:** JWT\n\n**Respuesta exitosa:**\n```\n200 { \"mensaje\": \"Destino eliminado de favoritos\" }\n```\n\n**Errores posibles:**\n- 400 ID inválido\n- 404 no existe o pertenece a otro usuario"
+          },
+          "response": []
+        },
+        {
+          "name": "Confirmar favorito quitado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Ya no está', () => pm.expect(pm.response.json().favoritos.map((f) => f.favorito_id)).to.not.include(pm.collectionVariables.get('favoritoId')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{turistaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/favoritos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "favoritos"
+              ]
+            },
+            "description": "El favorito ya no aparece.\n\n**Acceso:** JWT\n\n**Respuesta exitosa:**\n```\n200 { \"favoritos\": [ … ] }\n```"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5. Opiniones",
+      "item": [
+        {
+          "name": "Calificar sin sesión (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"puntuacion\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/destinos/{{destinoId}}/opiniones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "destinos",
+                "{{destinoId}}",
+                "opiniones"
+              ]
+            },
+            "description": "Calificar requiere sesión.\n\n**Acceso:** JWT\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 401 sin token"
+          },
+          "response": []
+        },
+        {
+          "name": "Puntuación fuera de rango (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{turistaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"puntuacion\": 6\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/destinos/{{destinoId}}/opiniones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "destinos",
+                "{{destinoId}}",
+                "opiniones"
+              ]
+            },
+            "description": "La puntuación es un entero de 1 a 5.\n\n**Acceso:** JWT\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 400 datos inválidos"
+          },
+          "response": []
+        },
+        {
+          "name": "Calificar y reseñar un destino",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Guarda la puntuación', () => pm.expect(pm.response.json().opinion.puntuacion).to.eql(4));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{turistaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"puntuacion\": 4,\n  \"comentario\": \"Muy buena experiencia (Postman).\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/destinos/{{destinoId}}/opiniones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "destinos",
+                "{{destinoId}}",
+                "opiniones"
+              ]
+            },
+            "description": "Crea o actualiza la opinión propia (una por usuario y destino). La reseña es opcional.\n\n**Acceso:** JWT\n\n**Cuerpo:**\n```\n{ \"puntuacion\": 4, \"comentario\": \"Opcional\" }\n```\n\n**Respuesta exitosa:**\n```\n200 { \"mensaje\": \"Tu calificación fue guardada\", \"opinion\": { \"id\": 7, \"puntuacion\": 4, \"comentario\": \"…\", \"created_at\": \"…\", \"updated_at\": \"…\" } }\n```\n\n**Errores posibles:**\n- 400 puntuación o comentario inválido\n- 401 sin token\n- 404 destino no existe"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar la misma opinión",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{turistaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"puntuacion\": 5,\n  \"comentario\": \"Actualicé mi calificación.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/destinos/{{destinoId}}/opiniones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "destinos",
+                "{{destinoId}}",
+                "opiniones"
+              ]
+            },
+            "description": "Volver a calificar actualiza la opinión existente; no crea una segunda.\n\n**Acceso:** JWT\n\n**Respuesta exitosa:**\n```\n200 { \"mensaje\": \"Tu calificación fue guardada\", \"opinion\": { \"puntuacion\": 5, … } }\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Resumen público de opiniones",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json(); pm.test('Una sola opinión con promedio 5', () => { pm.expect(j.total_opiniones).to.eql(1); pm.expect(Number(j.calificacion_promedio)).to.eql(5); });",
+                  "pm.test('No expone correos', () => pm.expect(JSON.stringify(j)).to.not.include('@'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/destinos/{{destinoId}}/opiniones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "destinos",
+                "{{destinoId}}",
+                "opiniones"
+              ]
+            },
+            "description": "Promedio, cantidad y reseñas del destino. Solo muestra el nombre público del autor (nunca su correo).\n\n**Acceso:** Público\n\n**Respuesta exitosa:**\n```\n200 { \"calificacion_promedio\": 5, \"total_opiniones\": 1, \"opiniones\": [ { \"id\": 7, \"puntuacion\": 5, \"comentario\": \"…\", \"autor\": \"Turista Demo\", \"created_at\": \"…\", \"updated_at\": \"…\" } ] }\n```\n\n**Errores posibles:**\n- 400 ID inválido\n- 404 destino no existe"
+          },
+          "response": []
+        },
+        {
+          "name": "Mi opinión sobre el destino",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Devuelve la opinión propia', () => pm.expect(pm.response.json().opinion.puntuacion).to.eql(5));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{turistaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/destinos/{{destinoId}}/opinion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "destinos",
+                "{{destinoId}}",
+                "opinion"
+              ]
+            },
+            "description": "Opinión propia del usuario de la sesión (o `null`).\n\n**Acceso:** JWT\n\n**Respuesta exitosa:**\n```\n200 { \"opinion\": { \"id\": 7, \"puntuacion\": 5, \"comentario\": \"…\" } }\n```"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "6. Imágenes sugeridas",
+      "item": [
+        {
+          "name": "Sugerir imagen sin aceptar las condiciones (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{turistaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "imagen",
+                  "type": "file",
+                  "src": "fixtures/foto-prueba.png"
+                },
+                {
+                  "key": "declara_derechos",
+                  "value": "false",
+                  "type": "text"
+                },
+                {
+                  "key": "acepta_atribucion",
+                  "value": "true",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/destinos/{{destinoId}}/sugerencias-imagenes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "destinos",
+                "{{destinoId}}",
+                "sugerencias-imagenes"
+              ]
+            },
+            "description": "Ambas confirmaciones son obligatorias.\n\n**Acceso:** JWT\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 400 `{ \"error\": \"Debes confirmar que tienes permiso…\", \"detalles\": { … } }`"
+          },
+          "response": []
+        },
+        {
+          "name": "Sugerir imagen de un destino",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 201', () => pm.response.to.have.status(201));",
+                  "const s = pm.response.json().sugerencia; pm.test('Queda pendiente', () => pm.expect(s.estado).to.eql('pendiente')); pm.collectionVariables.set('sugerenciaId', s.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{turistaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "imagen",
+                  "type": "file",
+                  "src": "fixtures/foto-prueba.png"
+                },
+                {
+                  "key": "declara_derechos",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "acepta_atribucion",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "comentario",
+                  "value": "Foto de prueba desde Postman",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/destinos/{{destinoId}}/sugerencias-imagenes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "destinos",
+                "{{destinoId}}",
+                "sugerencias-imagenes"
+              ]
+            },
+            "description": "Envía una imagen JPG, PNG o WebP (máximo 5 MB) como `multipart/form-data`. El servidor revisa la firma real del archivo. Queda privada hasta que un admin la apruebe. En Postman, el archivo se toma de `fixtures/foto-prueba.png` (configura *Working directory* en `backend/postman` o selecciónalo a mano).\n\n**Acceso:** JWT\n\n**Cuerpo:**\n```\nmultipart/form-data: imagen=<archivo>, declara_derechos=true, acepta_atribucion=true, comentario=(opcional)\n```\n\n**Respuesta exitosa:**\n```\n201 { \"mensaje\": \"Imagen enviada. Se mostrará públicamente solo si el administrador la aprueba.\", \"sugerencia\": { \"id\": 3, \"estado\": \"pendiente\", … } }\n```\n\n**Errores posibles:**\n- 400 sin archivo, formato no permitido o firma inválida\n- 401 sin token\n- 404 destino no existe\n- 413 archivo de más de 5 MB"
+          },
+          "response": []
+        },
+        {
+          "name": "Turista no puede ver pendientes (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 403', () => pm.response.to.have.status(403));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{turistaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sugerencias-imagenes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sugerencias-imagenes"
+              ]
+            },
+            "description": "La revisión es solo para administradores.\n\n**Acceso:** Admin\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 403 rol insuficiente"
+          },
+          "response": []
+        },
+        {
+          "name": "Imagen pendiente no es pública (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/destinos/{{destinoId}}/imagenes-comunidad/{{sugerenciaId}}/archivo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "destinos",
+                "{{destinoId}}",
+                "imagenes-comunidad",
+                "{{sugerenciaId}}",
+                "archivo"
+              ]
+            },
+            "description": "Una imagen pendiente no se entrega por la ruta pública.\n\n**Acceso:** Público\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 404 `{ \"error\": \"Imagen no encontrada o todavía pendiente de aprobación.\" }`"
+          },
+          "response": []
+        },
+        {
+          "name": "Listar imágenes pendientes (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Incluye la sugerencia', () => pm.expect(pm.response.json().sugerencias.map((s) => s.id)).to.include(pm.collectionVariables.get('sugerenciaId')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sugerencias-imagenes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sugerencias-imagenes"
+              ]
+            },
+            "description": "Imágenes pendientes de revisión con los datos del destino y del aportante.\n\n**Acceso:** Admin\n\n**Respuesta exitosa:**\n```\n200 { \"sugerencias\": [ { \"id\": 3, \"destino_id\": 500, \"destino_nombre\": \"…\", \"autor_nombre\": \"Turista Demo\", \"mime_type\": \"image/png\", \"tamano_bytes\": 90, \"imagen_url\": \"/api/sugerencias-imagenes/3/archivo\", … } ] }\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Ver archivo pendiente (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Es una imagen PNG', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('image/png'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sugerencias-imagenes/{{sugerenciaId}}/archivo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sugerencias-imagenes",
+                "{{sugerenciaId}}",
+                "archivo"
+              ]
+            },
+            "description": "Entrega el archivo de forma privada (`Cache-Control: private, no-store`).\n\n**Acceso:** Admin\n\n**Respuesta exitosa:**\n```\n200 (archivo image/png)\n```\n\n**Errores posibles:**\n- 404 no existe o ya fue revisada"
+          },
+          "response": []
+        },
+        {
+          "name": "Aprobar imagen (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Queda aprobada', () => pm.expect(pm.response.json().sugerencia.estado).to.eql('aprobada'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"aprobada\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/sugerencias-imagenes/{{sugerenciaId}}/revision",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sugerencias-imagenes",
+                "{{sugerenciaId}}",
+                "revision"
+              ]
+            },
+            "description": "Aprueba o rechaza una imagen pendiente. Si el destino no tenía foto, la aprobada pasa a ser su imagen principal.\n\n**Acceso:** Admin\n\n**Cuerpo:**\n```\n{ \"estado\": \"aprobada\" }   // o \"rechazada\"\n```\n\n**Respuesta exitosa:**\n```\n200 { \"mensaje\": \"Imagen aprobada y publicada.\", \"sugerencia\": { \"id\": 3, \"estado\": \"aprobada\" } }\n```\n\n**Errores posibles:**\n- 400 decisión inválida\n- 404 no existe\n- 409 ya fue revisada"
+          },
+          "response": []
+        },
+        {
+          "name": "Revisar una imagen ya revisada (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 409', () => pm.response.to.have.status(409));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"rechazada\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/sugerencias-imagenes/{{sugerenciaId}}/revision",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sugerencias-imagenes",
+                "{{sugerenciaId}}",
+                "revision"
+              ]
+            },
+            "description": "Solo se pueden revisar imágenes pendientes.\n\n**Acceso:** Admin\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 409 la imagen ya fue revisada\n- 404 no existe"
+          },
+          "response": []
+        },
+        {
+          "name": "Imágenes aprobadas del destino (público)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Incluye la imagen aprobada', () => pm.expect(pm.response.json().imagenes.map((i) => i.id)).to.include(pm.collectionVariables.get('sugerenciaId')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/destinos/{{destinoId}}/imagenes-comunidad",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "destinos",
+                "{{destinoId}}",
+                "imagenes-comunidad"
+              ]
+            },
+            "description": "Imágenes aprobadas con el nombre de quien las aportó.\n\n**Acceso:** Público\n\n**Respuesta exitosa:**\n```\n200 { \"imagenes\": [ { \"id\": 3, \"autor_nombre\": \"Turista Demo\", \"comentario\": \"…\", \"created_at\": \"…\", \"imagen_url\": \"/api/destinos/500/imagenes-comunidad/3/archivo\" } ] }\n```\n\n**Errores posibles:**\n- 400 ID inválido\n- 404 destino no existe"
+          },
+          "response": []
+        },
+        {
+          "name": "Archivo de imagen aprobada (público)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Es una imagen PNG', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('image/png'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/destinos/{{destinoId}}/imagenes-comunidad/{{sugerenciaId}}/archivo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "destinos",
+                "{{destinoId}}",
+                "imagenes-comunidad",
+                "{{sugerenciaId}}",
+                "archivo"
+              ]
+            },
+            "description": "Archivo público de una imagen aprobada.\n\n**Acceso:** Público\n\n**Respuesta exitosa:**\n```\n200 (archivo image/png)\n```\n\n**Errores posibles:**\n- 404 no existe o no está aprobada"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "7. Usuarios (admin)",
+      "item": [
+        {
+          "name": "Turista no puede listar usuarios (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 403', () => pm.response.to.have.status(403));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{turistaToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/usuarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "usuarios"
+              ]
+            },
+            "description": "La gestión de usuarios es solo para administradores.\n\n**Acceso:** Admin\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 403 rol insuficiente"
+          },
+          "response": []
+        },
+        {
+          "name": "Listar usuarios sin hashes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "const u = pm.response.json().usuarios; pm.test('Nunca expone password_hash', () => u.forEach((x) => pm.expect(x).to.not.have.property('password_hash')));",
+                  "const r = u.find((x) => x.email === pm.collectionVariables.get('registroEmail')); pm.test('Incluye la cuenta registrada', () => pm.expect(r).to.be.an('object')); if (r) pm.collectionVariables.set('registroUsuarioId', r.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/usuarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "usuarios"
+              ]
+            },
+            "description": "Lista las cuentas sin exponer el hash de la contraseña.\n\n**Acceso:** Admin\n\n**Respuesta exitosa:**\n```\n200 { \"usuarios\": [ { \"id\": 2, \"nombre\": \"…\", \"email\": \"…\", \"rol\": \"turista\", \"created_at\": \"…\" } ] }\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Editar nombre de un usuario",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Nombre actualizado', () => pm.expect(pm.response.json().usuario.nombre).to.eql('Turista Postman editado'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Turista Postman editado\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/usuarios/{{registroUsuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "usuarios",
+                "{{registroUsuarioId}}"
+              ]
+            },
+            "description": "Actualiza nombre y/o rol (`turista` o `admin`).\n\n**Acceso:** Admin\n\n**Cuerpo:**\n```\n{ \"nombre\": \"…\", \"rol\": \"admin\" }\n```\n\n**Respuesta exitosa:**\n```\n200 { \"mensaje\": \"Usuario actualizado exitosamente\", \"usuario\": { … } }\n```\n\n**Errores posibles:**\n- 400 datos inválidos o el admin intenta quitarse su propio rol (`SELF_DEMOTION`)\n- 404 no existe\n- 409 `LAST_ADMIN`: no se puede quitar el rol al último administrador"
+          },
+          "response": []
+        },
+        {
+          "name": "Admin no puede quitarse su propio rol (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);",
+                  "pm.test('Código SELF_DEMOTION', () => pm.expect(pm.response.json().code).to.eql('SELF_DEMOTION'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rol\": \"turista\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/usuarios/{{adminId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "usuarios",
+                "{{adminId}}"
+              ]
+            },
+            "description": "Evita que el sistema quede sin administradores por error.\n\n**Acceso:** Admin\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 400 `{ \"code\": \"SELF_DEMOTION\" }`"
+          },
+          "response": []
+        },
+        {
+          "name": "Admin no puede eliminarse a sí mismo (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/usuarios/{{adminId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "usuarios",
+                "{{adminId}}"
+              ]
+            },
+            "description": "Un administrador no puede eliminar su propia cuenta.\n\n**Acceso:** Admin\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 400 cuenta propia\n- 409 `LAST_ADMIN` último administrador"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "8. Limpieza de datos temporales",
+      "item": [
+        {
+          "name": "Quitar destino temporal (borrado lógico)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/destinos/{{destinoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "destinos",
+                "{{destinoId}}"
+              ]
+            },
+            "description": "Quita el destino de la aplicación y conserva el registro en PostgreSQL (`activo = false`).\n\n**Acceso:** Admin\n\n**Respuesta exitosa:**\n```\n200 { \"mensaje\": \"Destino quitado de la aplicación. El registro se conserva en la base de datos.\", \"destino\": { … } }\n```\n\n**Errores posibles:**\n- 404 no existe"
+          },
+          "response": []
+        },
+        {
+          "name": "Destino quitado ya no se lee (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Responde JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('Incluye un mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/destinos/{{destinoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "destinos",
+                "{{destinoId}}"
+              ]
+            },
+            "description": "Las rutas públicas solo devuelven destinos activos.\n\n**Acceso:** Público\n\n**Respuesta exitosa:**\n```\n—\n```\n\n**Errores posibles:**\n- 404 no existe o fue quitado"
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar categoría temporal",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Elimina el destino temporal ya quitado', () => pm.expect(pm.response.json().destinos_inactivos_eliminados).to.eql(1));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/categorias/{{categoriaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categorias",
+                "{{categoriaId}}"
+              ]
+            },
+            "description": "Elimina una categoría que no tiene destinos activos. Sus destinos ya quitados (y los favoritos, opiniones e imágenes de esos destinos) se eliminan definitivamente con ella.\n\n**Acceso:** Admin\n\n**Respuesta exitosa:**\n```\n200 { \"mensaje\": \"Categoría eliminada exitosamente\", \"categoria\": { \"id\": 9, \"nombre\": \"…\" }, \"destinos_inactivos_eliminados\": 1 }\n```\n\n**Errores posibles:**\n- 404 no existe\n- 409 tiene destinos activos"
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar usuario temporal",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/usuarios/{{registroUsuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "usuarios",
+                "{{registroUsuarioId}}"
+              ]
+            },
+            "description": "Elimina una cuenta y, en cascada, sus favoritos y opiniones.\n\n**Acceso:** Admin\n\n**Respuesta exitosa:**\n```\n200 { \"mensaje\": \"Usuario eliminado exitosamente\", \"usuario\": { … } }\n```\n\n**Errores posibles:**\n- 400 cuenta propia\n- 404 no existe\n- 409 `LAST_ADMIN`"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api"
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "adminId",
+      "value": ""
+    },
+    {
+      "key": "turistaToken",
+      "value": ""
+    },
+    {
+      "key": "tokenSinFirma",
+      "value": ""
+    },
+    {
+      "key": "registroEmail",
+      "value": ""
+    },
+    {
+      "key": "registroUsuarioId",
+      "value": ""
+    },
+    {
+      "key": "bloqueoEmail",
+      "value": ""
+    },
+    {
+      "key": "regionId",
+      "value": ""
+    },
+    {
+      "key": "regionSlug",
+      "value": ""
+    },
+    {
+      "key": "categoriaSlug",
+      "value": ""
+    },
+    {
+      "key": "categoriaId",
+      "value": ""
+    },
+    {
+      "key": "destinoId",
+      "value": ""
+    },
+    {
+      "key": "favoritoId",
+      "value": ""
+    },
+    {
+      "key": "sugerenciaId",
+      "value": ""
+    }
+  ]
+}

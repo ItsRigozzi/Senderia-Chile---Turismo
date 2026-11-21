@@ -42,11 +42,43 @@ export async function updateCategoria(id: number, fields: CategoriaUpdate) {
   return result.rows[0];
 }
 
+/**
+ * Elimina una categoría.
+ * - Si tiene destinos activos (visibles), no se elimina.
+ * - Los destinos ya quitados de la aplicación (borrado lógico) no cuentan: como la
+ *   clave foránea exige una categoría, se eliminan definitivamente junto con ella.
+ */
 export async function deleteCategoria(id: number) {
-  const destinations = await pool.query('SELECT COUNT(*) FROM destinos WHERE categoria_id = $1', [id]);
-  const associatedCount = Number.parseInt(destinations.rows[0].count, 10);
-  if (associatedCount > 0) return { associatedCount };
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const category = await client.query('SELECT id FROM categorias WHERE id = $1 FOR UPDATE', [id]);
+    if (category.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return { associatedCount: 0, categoria: undefined };
+    }
 
-  const result = await pool.query('DELETE FROM categorias WHERE id = $1 RETURNING id, nombre', [id]);
-  return { associatedCount: 0, categoria: result.rows[0] };
+    const active = await client.query<{ count: string }>(
+      'SELECT COUNT(*) FROM destinos WHERE categoria_id = $1 AND activo = TRUE',
+      [id],
+    );
+    const associatedCount = Number.parseInt(active.rows[0].count, 10);
+    if (associatedCount > 0) {
+      await client.query('ROLLBACK');
+      return { associatedCount };
+    }
+
+    const removed = await client.query(
+      'DELETE FROM destinos WHERE categoria_id = $1 AND activo = FALSE',
+      [id],
+    );
+    const result = await client.query('DELETE FROM categorias WHERE id = $1 RETURNING id, nombre', [id]);
+    await client.query('COMMIT');
+    return { associatedCount: 0, categoria: result.rows[0], inactiveRemoved: removed.rowCount ?? 0 };
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => undefined);
+    throw error;
+  } finally {
+    client.release();
+  }
 }

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import pool from '../config/db.js';
+import { sendServerError } from './errorHandler.js';
 
 export interface AuthPayload {
   userId: number;
@@ -30,7 +31,8 @@ export const auth = async (req: Request, res: Response, next: NextFunction): Pro
 
   let decoded: AuthPayload;
   try {
-    decoded = jwt.verify(token, process.env.JWT_SECRET as string) as AuthPayload;
+    // Se fija el algoritmo para impedir tokens firmados con otro algoritmo (por ejemplo "none").
+    decoded = jwt.verify(token, process.env.JWT_SECRET as string, { algorithms: ['HS256'] }) as AuthPayload;
   } catch {
     res.status(401).json({ error: 'Token inválido o expirado' });
     return;
@@ -58,7 +60,7 @@ export const auth = async (req: Request, res: Response, next: NextFunction): Pro
 
     req.user = { userId: result.rows[0].id, email: result.rows[0].email, rol: result.rows[0].rol };
     next();
-  } catch {
-    res.status(503).json({ error: 'No se pudo validar la sesión en PostgreSQL' });
+  } catch (error) {
+    sendServerError(res, error, 'Error al validar la sesión:', 'No se pudo validar la sesión');
   }
 };

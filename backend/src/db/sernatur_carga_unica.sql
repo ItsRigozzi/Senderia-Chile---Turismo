@@ -29,8 +29,10 @@ DO $$
 BEGIN
   IF to_regclass('public.regiones') IS NULL
      OR to_regclass('public.categorias') IS NULL
-     OR to_regclass('public.destinos') IS NULL THEN
-    RAISE EXCEPTION 'Falta el esquema Sendería. Ejecuta primero init.sql y seed.sql en esta base.';
+     OR to_regclass('public.destinos') IS NULL
+     OR to_regclass('public.sernatur_atractivos_fuente') IS NULL
+     OR to_regclass('public.sernatur_destinos_revision') IS NULL THEN
+    RAISE EXCEPTION 'Falta el esquema Sendería. Ejecuta primero migraciones.sql, init.sql y seed.sql en esta base.';
   END IF;
 END $$;
 
@@ -42,40 +44,7 @@ END $$;
 -- Horarios y condiciones de acceso no existen como campos equivalentes en este catálogo.
 -- Se conserva la clasificación original de SERNATUR para mapearla a categorías de Sendería después.
 -- En este archivo se carga en la misma transacción; los códigos ya existentes no se sobreescriben.
-CREATE TABLE IF NOT EXISTS public.sernatur_atractivos_fuente (
-  cod_atrac TEXT PRIMARY KEY,
-  jerarquia TEXT NOT NULL,
-  categoria TEXT NOT NULL,
-  tipo TEXT NOT NULL,
-  subtipo TEXT NOT NULL,
-  nombre TEXT NOT NULL,
-  region TEXT NOT NULL,
-  provincia TEXT NOT NULL,
-  comuna TEXT NOT NULL,
-  localidad TEXT,
-  direccion TEXT,
-  telefono TEXT,
-  propiedad TEXT,
-  administra TEXT,
-  distcr TEXT,
-  cr TEXT,
-  distcc TEXT,
-  cc TEXT,
-  loc_urbana TEXT,
-  estacional TEXT,
-  uso_tur TEXT,
-  demanda TEXT,
-  servicios TEXT,
-  cod_reg TEXT,
-  cod_prov TEXT,
-  cod_com TEXT,
-  descripcion TEXT,
-  estado TEXT,
-  longitud NUMERIC(13,10) NOT NULL,
-  latitud NUMERIC(13,10) NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_sernatur_atractivos_nombre ON public.sernatur_atractivos_fuente (lower(nombre));
-CREATE INDEX IF NOT EXISTS idx_sernatur_atractivos_region_comuna ON public.sernatur_atractivos_fuente (region, comuna);
+-- La tabla public.sernatur_atractivos_fuente y sus índices se crean en init.sql.
 
 INSERT INTO public.sernatur_atractivos_fuente (cod_atrac, jerarquia, categoria, tipo, subtipo, nombre, region, provincia, comuna, localidad, direccion, telefono, propiedad, administra, distcr, cr, distcc, cc, loc_urbana, estacional, uso_tur, demanda, servicios, cod_reg, cod_prov, cod_com, descripcion, estado, longitud, latitud) VALUES
   ('R150168', 'NACIONAL', 'SITIOS NATURALES', 'COSTA', 'OLAS', 'OLA EL CUARTEL', 'REGIÓN DE ARICA Y PARINACOTA', 'ARICA', 'ARICA', 'HUMEDAL RIO LLUTA', 'CUADRA ESTE DEL HITO 1,2 KM.', 'SIN TELEFONO', 'PUBLICA', 'FISCAL/CONCESIÓN MUNICIPAL(SANTUARIO DE LA NATURALEZA)', '9.1', 'ARICA', '9.1', 'ARICA', 'SECTOR NORTE DE ARICA, RIO LLUTA', 'DOS O MAS TEMPORADAS', 'ACTUAL', 'LOCAL ,REGIONAL', 'HOSPEDAJE', '15', '151', '15101', 'Playa expuesta del tipo intermedia; es posible presenciar hasta tres líneas de oleaje, formando quiebres de ola del tipo spilling y plunging. DIFICULTAD: PRINCIPIANTE/ AVANZADO/EXPERTO. TIPO DE OLA: BEACH BREAK ( ROMPIENTE DE PLAYA). TAMAÑO: 1-3 M.', 'REGULAR', -70.3221485480, -18.4150491450),
@@ -5118,41 +5087,7 @@ SELECT COUNT(*) AS total_atractivos_sernatur FROM public.sernatur_atractivos_fue
 -- Este catálogo SERNATUR es de 2020; confirmar vigencia operativa antes de publicar.
 
 
-CREATE TABLE IF NOT EXISTS public.sernatur_destinos_revision (
-  cod_atrac TEXT PRIMARY KEY REFERENCES public.sernatur_atractivos_fuente(cod_atrac) ON DELETE CASCADE,
-  estado_coincidencia TEXT NOT NULL CHECK (estado_coincidencia IN ('coincidencia_exacta', 'revisar', 'sin_resultado', 'error')),
-  puntaje_coincidencia NUMERIC(5,4),
-  titulo_wikipedia TEXT,
-  url_wikipedia TEXT,
-  descripcion_wikipedia TEXT,
-  imagen_url TEXT,
-  imagen_autor TEXT,
-  imagen_licencia TEXT,
-  imagen_url_licencia TEXT,
-  error TEXT,
-  nombre_aprobado TEXT,
-  descripcion_aprobada TEXT,
-  categoria_id_aprobada INTEGER REFERENCES public.categorias(id),
-  region_id_aprobada INTEGER REFERENCES public.regiones(id),
-  horario_aprobado VARCHAR(255),
-  condiciones_acceso_aprobadas TEXT,
-  imagen_url_aprobada TEXT,
-  imagen_autor_aprobado TEXT,
-  imagen_licencia_aprobada TEXT,
-  imagen_url_licencia_aprobada TEXT,
-  ubicacion_verificada BOOLEAN NOT NULL DEFAULT FALSE,
-  imagen_verificada BOOLEAN NOT NULL DEFAULT FALSE,
-  estado_revision TEXT NOT NULL DEFAULT 'pendiente' CHECK (estado_revision IN ('pendiente', 'aprobado', 'descartado')),
-  estado_completitud TEXT NOT NULL DEFAULT 'pendiente',
-  observacion_revision TEXT,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-ALTER TABLE public.sernatur_destinos_revision
-  ADD COLUMN IF NOT EXISTS estado_completitud TEXT NOT NULL DEFAULT 'pendiente';
-
-CREATE INDEX IF NOT EXISTS idx_sernatur_revision_estado
-  ON public.sernatur_destinos_revision (estado_coincidencia, estado_revision);
+-- La tabla public.sernatur_destinos_revision y su índice se crean en init.sql.
 
 CREATE TEMP TABLE _sernatur_wiki_csv (
   cod_atrac TEXT PRIMARY KEY,
@@ -8931,28 +8866,7 @@ SET nombre_aprobado = COALESCE(NULLIF(BTRIM(r.nombre_aprobado), ''), c.nombre),
 FROM candidatos_completos AS c
 WHERE r.cod_atrac = c.cod_atrac;
 
-CREATE OR REPLACE VIEW public.v_sernatur_destinos_revision AS
-SELECT s.cod_atrac, s.nombre, s.region, s.provincia, s.comuna,
-       s.localidad, s.direccion, s.telefono, s.propiedad, s.administra,
-       s.categoria AS categoria_sernatur, s.tipo AS tipo_sernatur,
-       s.subtipo AS subtipo_sernatur, s.servicios, s.estacional,
-       s.uso_tur, s.demanda, s.estado AS estado_sernatur,
-       s.latitud, s.longitud, s.descripcion AS descripcion_sernatur,
-       r.estado_coincidencia, r.puntaje_coincidencia, r.titulo_wikipedia,
-       r.url_wikipedia, r.descripcion_wikipedia,
-       COALESCE(NULLIF(BTRIM(r.descripcion_aprobada), ''),
-                NULLIF(BTRIM(r.descripcion_wikipedia), ''),
-                NULLIF(BTRIM(s.descripcion), '')) AS descripcion_candidata,
-       r.imagen_url, r.imagen_autor, r.imagen_licencia, r.imagen_url_licencia,
-       (r.imagen_url IS NOT NULL AND r.imagen_autor IS NOT NULL
-        AND r.imagen_licencia IS NOT NULL AND r.imagen_url_licencia IS NOT NULL)
-         AS atribucion_imagen_completa,
-       r.categoria_id_aprobada, r.region_id_aprobada,
-       r.horario_aprobado, r.condiciones_acceso_aprobadas,
-       r.ubicacion_verificada, r.imagen_verificada,
-       r.estado_revision, r.observacion_revision, r.error, r.estado_completitud
-FROM public.sernatur_atractivos_fuente AS s
-JOIN public.sernatur_destinos_revision AS r USING (cod_atrac);
+-- La vista public.v_sernatur_destinos_revision se crea en init.sql.
 
 
 -- Resumen esperado para el archivo recibido: 4.881 registros en revisión,
@@ -8995,15 +8909,7 @@ JOIN public.sernatur_destinos_revision AS r USING (cod_atrac);
 
 -- Conserva la atribución de las imágenes de Wikimedia y el código de origen,
 -- permitiendo auditoría y evitando volver a importar el mismo atractivo.
-ALTER TABLE public.destinos
-  ADD COLUMN IF NOT EXISTS sernatur_cod_atrac TEXT,
-  ADD COLUMN IF NOT EXISTS imagen_autor TEXT,
-  ADD COLUMN IF NOT EXISTS imagen_licencia TEXT,
-  ADD COLUMN IF NOT EXISTS imagen_url_licencia TEXT;
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_destinos_sernatur_cod_atrac
-  ON public.destinos (sernatur_cod_atrac)
-  WHERE sernatur_cod_atrac IS NOT NULL;
+-- Las columnas sernatur_cod_atrac e imagen_* de public.destinos y su índice único se crean en init.sql.
 
 INSERT INTO public.destinos (
   nombre, descripcion, categoria_id, region_id, latitud, longitud,

@@ -35,12 +35,19 @@ try {
   if ($LASTEXITCODE -ne 0) { throw 'No se pudo conectar a PostgreSQL. Revisa el servicio y las variables DB_*.' }
   $ExistingValue = @($Existing) -join ''
   if ($ExistingValue.Trim() -ne '1') { & createdb -h $env:DB_HOST -p $env:DB_PORT -U $env:DB_USER $env:DB_NAME; if ($LASTEXITCODE -ne 0) { throw 'No se pudo crear la base indicada en DB_NAME. Verifica que el usuario tenga permiso para crear bases de datos.' } }
-  $SqlFiles = @((Join-Path $BackendRoot 'src/db/init.sql'), (Join-Path $BackendRoot 'src/db/seed.sql'))
+  # Mismo orden que Docker: migraciones (actualiza bases antiguas; sin efecto en una nueva),
+  # esquema, datos de muestra y catálogo SERNATUR. Todo es re-ejecutable y no duplica datos.
+  $SqlFiles = @(
+    (Join-Path $BackendRoot 'src/db/migraciones.sql'),
+    (Join-Path $BackendRoot 'src/db/init.sql'),
+    (Join-Path $BackendRoot 'src/db/seed.sql'),
+    (Join-Path $BackendRoot 'src/db/sernatur_carga_unica.sql')
+  )
   foreach ($SqlFile in $SqlFiles) {
     & psql -v ON_ERROR_STOP=1 -h $env:DB_HOST -p $env:DB_PORT -U $env:DB_USER -d $env:DB_NAME -f $SqlFile
     if ($LASTEXITCODE -ne 0) { throw "Falló el script $SqlFile" }
   }
-  Write-Host "Base de datos '$env:DB_NAME' inicializada con esquema y seed."
+  Write-Host "Base de datos '$env:DB_NAME' actualizada con migraciones, esquema, datos de muestra y catálogo SERNATUR."
 }
 finally {
   if ($null -eq $PreviousPgPassword) { Remove-Item Env:PGPASSWORD -ErrorAction SilentlyContinue } else { $env:PGPASSWORD = $PreviousPgPassword }

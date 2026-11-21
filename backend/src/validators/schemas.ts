@@ -3,14 +3,18 @@ import { z } from 'zod';
 export const idParamSchema = z.coerce.number().int().positive().max(2147483647);
 const foreignKeyIdSchema = z.number().int().positive().max(2147483647);
 
+// Política de contraseñas: al menos 8 caracteres, con al menos una letra y al menos un número.
+const touristPasswordSchema = z.string()
+  .min(8, 'La contraseña debe tener al menos 8 caracteres')
+  .max(100, 'La contraseña no puede superar los 100 caracteres')
+  .regex(/\p{L}/u, 'La contraseña debe incluir al menos una letra')
+  .regex(/\d/, 'La contraseña debe incluir al menos un número');
+
 // ---- Auth ----
 export const registerSchema = z.object({
   nombre: z.string().min(2, 'El nombre debe tener al menos 2 caracteres').max(150),
   email: z.string().trim().toLowerCase().email('Email inválido').max(255),
-  password: z.string()
-    .min(8, 'La contraseña debe tener al menos 8 caracteres')
-    .max(100)
-    .regex(/[a-zA-Z0-9]/, 'La contraseña debe incluir al menos una letra o un número'),
+  password: touristPasswordSchema,
 });
 
 export const loginSchema = z.object({
@@ -31,22 +35,38 @@ export const googleCredentialSchema = z.object({
   credential: z.string().min(20).max(10000),
 });
 
-const touristPasswordSchema = z.string()
-  .min(8, 'La contraseña debe tener al menos 8 caracteres')
-  .max(100)
-  .regex(/[a-zA-Z0-9]/, 'La contraseña debe incluir al menos una letra o un número');
-
 export const completePasswordResetSchema = emailCodeSchema.extend({
+  password: touristPasswordSchema,
+});
+
+export const demoTouristSchema = z.object({
+  nombre: z.string().min(2).max(150),
+  email: z.string().trim().toLowerCase().email().max(255),
   password: touristPasswordSchema,
 });
 
 export const createAdminSchema = z.object({
   nombre: z.string().min(2).max(150),
   email: z.string().trim().toLowerCase().email().max(255),
-  password: z.string().min(12).max(100),
+  password: touristPasswordSchema.refine((value) => value.length >= 12, 'La contraseña de administrador debe tener al menos 12 caracteres'),
 });
 
 // ---- Destinos ----
+// Imagen: solo URLs http(s), rutas locales del catálogo (/images/...) o la ruta de una foto
+// aportada y aprobada (/api/destinos/:id/imagenes-comunidad/:imagenId/archivo).
+// Se rechazan esquemas peligrosos como javascript: o data:.
+const LOCAL_IMAGE_PATH = /^\/images\/[A-Za-z0-9_\-./]+$/;
+const COMMUNITY_IMAGE_PATH = /^\/api\/destinos\/\d+\/imagenes-comunidad\/\d+\/archivo$/;
+const imageUrlSchema = z.string().trim().max(500).refine((value) => {
+  if (COMMUNITY_IMAGE_PATH.test(value)) return true;
+  if (LOCAL_IMAGE_PATH.test(value)) return !value.includes('..') && !value.includes('//');
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}, 'La imagen debe ser una URL que comience con http:// o https://');
 const destinationFieldsSchema = z.object({
   nombre: z.string().min(2).max(255),
   descripcion: z.string().optional(),
@@ -57,7 +77,7 @@ const destinationFieldsSchema = z.object({
   longitud: z.number().min(-180).max(180).nullable().optional(),
   horario: z.string().max(255).optional(),
   condiciones_acceso: z.string().optional(),
-  imagen_url: z.string().url().max(500).optional(),
+  imagen_url: imageUrlSchema.optional(),
 });
 
 const validateCoordinatePair = (

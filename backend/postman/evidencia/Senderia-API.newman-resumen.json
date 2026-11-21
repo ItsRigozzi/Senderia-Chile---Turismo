@@ -1,0 +1,1248 @@
+{
+  "coleccion": "Sendería Chile - API REST",
+  "fecha": "2026-11-21T20:03:19.663Z",
+  "entorno": "Docker local (http://localhost:3000/api)",
+  "totales": {
+    "solicitudes_coleccion": 64,
+    "solicitudes_http": 69,
+    "solicitudes_fallidas": 0,
+    "aserciones": 164,
+    "aserciones_fallidas": 0,
+    "duracion_ms": 5820
+  },
+  "nota": "Resumen depurado del reporte JSON de Newman: no incluye tokens, contraseñas ni cuerpos de respuesta. solicitudes_http incluye los 5 intentos fallidos que la prueba de bloqueo envía antes de la solicitud principal.",
+  "ejecuciones": [
+    {
+      "solicitud": "Estado de la API y PostgreSQL",
+      "metodo": "GET",
+      "ruta": "/api/health",
+      "status": 200,
+      "tiempo_ms": 25,
+      "aserciones": [
+        {
+          "nombre": "Responde 200",
+          "ok": true
+        },
+        {
+          "nombre": "PostgreSQL conectado",
+          "ok": true
+        },
+        {
+          "nombre": "Cabeceras de seguridad (helmet)",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Ruta inexistente responde 404 en JSON",
+      "metodo": "GET",
+      "ruta": "/api/ruta-que-no-existe",
+      "status": 404,
+      "tiempo_ms": 4,
+      "aserciones": [
+        {
+          "nombre": "Responde 404",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "JSON malformado responde 400 sin stack trace",
+      "metodo": "POST",
+      "ruta": "/api/auth/login",
+      "status": 400,
+      "tiempo_ms": 3,
+      "aserciones": [
+        {
+          "nombre": "Responde 400",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        },
+        {
+          "nombre": "No expone el stack trace",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Login administrador",
+      "metodo": "POST",
+      "ruta": "/api/auth/login",
+      "status": 200,
+      "tiempo_ms": 231,
+      "aserciones": [
+        {
+          "nombre": "Responde 200",
+          "ok": true
+        },
+        {
+          "nombre": "Entrega token y rol admin",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Login turista de demostración",
+      "metodo": "POST",
+      "ruta": "/api/auth/login",
+      "status": 200,
+      "tiempo_ms": 60,
+      "aserciones": [
+        {
+          "nombre": "Responde 200",
+          "ok": true
+        },
+        {
+          "nombre": "Rol turista",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Usuario de la sesión actual",
+      "metodo": "GET",
+      "ruta": "/api/auth/me",
+      "status": 200,
+      "tiempo_ms": 5,
+      "aserciones": [
+        {
+          "nombre": "Responde 200",
+          "ok": true
+        },
+        {
+          "nombre": "Devuelve el usuario sin hash",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Sesión sin token responde 401",
+      "metodo": "GET",
+      "ruta": "/api/auth/me",
+      "status": 401,
+      "tiempo_ms": 2,
+      "aserciones": [
+        {
+          "nombre": "Responde 401",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Token con algoritmo \"none\" es rechazado",
+      "metodo": "GET",
+      "ruta": "/api/auth/me",
+      "status": 401,
+      "tiempo_ms": 3,
+      "aserciones": [
+        {
+          "nombre": "Responde 401",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Registro rechaza contraseña débil",
+      "metodo": "POST",
+      "ruta": "/api/auth/register",
+      "status": 400,
+      "tiempo_ms": 3,
+      "aserciones": [
+        {
+          "nombre": "Responde 400",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        },
+        {
+          "nombre": "Indica el problema de la contraseña",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Registrar turista temporal",
+      "metodo": "POST",
+      "ruta": "/api/auth/register",
+      "status": 201,
+      "tiempo_ms": 65,
+      "aserciones": [
+        {
+          "nombre": "Responde 201",
+          "ok": true
+        },
+        {
+          "nombre": "No entrega token antes de verificar",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Registro duplicado responde 409",
+      "metodo": "POST",
+      "ruta": "/api/auth/register",
+      "status": 409,
+      "tiempo_ms": 60,
+      "aserciones": [
+        {
+          "nombre": "Responde 409",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Login sin verificar el correo responde 403",
+      "metodo": "POST",
+      "ruta": "/api/auth/login",
+      "status": 403,
+      "tiempo_ms": 67,
+      "aserciones": [
+        {
+          "nombre": "Responde 403",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        },
+        {
+          "nombre": "Código EMAIL_NOT_VERIFIED",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Verificar correo con código incorrecto",
+      "metodo": "POST",
+      "ruta": "/api/auth/verify-email",
+      "status": 400,
+      "tiempo_ms": 8,
+      "aserciones": [
+        {
+          "nombre": "Responde 400",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        },
+        {
+          "nombre": "Código INVALID_CODE",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Solicitar recuperación de contraseña",
+      "metodo": "POST",
+      "ruta": "/api/auth/password-reset/request",
+      "status": 200,
+      "tiempo_ms": 6,
+      "aserciones": [
+        {
+          "nombre": "Responde 200",
+          "ok": true
+        },
+        {
+          "nombre": "Mensaje genérico",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Bloqueo tras 5 intentos fallidos de login",
+      "metodo": "POST",
+      "ruta": "/api/auth/login",
+      "status": 429,
+      "tiempo_ms": 3,
+      "aserciones": [
+        {
+          "nombre": "Responde 429",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye Retry-After",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Listar categorías",
+      "metodo": "GET",
+      "ruta": "/api/categorias",
+      "status": 200,
+      "tiempo_ms": 4,
+      "aserciones": [
+        {
+          "nombre": "Responde 200",
+          "ok": true
+        },
+        {
+          "nombre": "Devuelve una lista",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Listar regiones",
+      "metodo": "GET",
+      "ruta": "/api/categorias/regiones",
+      "status": 200,
+      "tiempo_ms": 3,
+      "aserciones": [
+        {
+          "nombre": "Responde 200",
+          "ok": true
+        },
+        {
+          "nombre": "16 regiones",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Crear categoría temporal (admin)",
+      "metodo": "POST",
+      "ruta": "/api/categorias",
+      "status": 201,
+      "tiempo_ms": 5,
+      "aserciones": [
+        {
+          "nombre": "Responde 201",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Categoría duplicada responde 409",
+      "metodo": "POST",
+      "ruta": "/api/categorias",
+      "status": 409,
+      "tiempo_ms": 3,
+      "aserciones": [
+        {
+          "nombre": "Responde 409",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Turista no puede crear categorías (403)",
+      "metodo": "POST",
+      "ruta": "/api/categorias",
+      "status": 403,
+      "tiempo_ms": 4,
+      "aserciones": [
+        {
+          "nombre": "Responde 403",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Actualizar categoría (admin)",
+      "metodo": "PUT",
+      "ruta": "/api/categorias/16",
+      "status": 200,
+      "tiempo_ms": 5,
+      "aserciones": [
+        {
+          "nombre": "Responde 200",
+          "ok": true
+        },
+        {
+          "nombre": "Descripción actualizada",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Crear destino temporal (admin)",
+      "metodo": "POST",
+      "ruta": "/api/destinos",
+      "status": 201,
+      "tiempo_ms": 7,
+      "aserciones": [
+        {
+          "nombre": "Responde 201",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "imagen_url con javascript: es rechazada",
+      "metodo": "POST",
+      "ruta": "/api/destinos",
+      "status": 400,
+      "tiempo_ms": 3,
+      "aserciones": [
+        {
+          "nombre": "Responde 400",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        },
+        {
+          "nombre": "El detalle apunta a imagen_url",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Crear destino sin token (401)",
+      "metodo": "POST",
+      "ruta": "/api/destinos",
+      "status": 401,
+      "tiempo_ms": 2,
+      "aserciones": [
+        {
+          "nombre": "Responde 401",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Turista no puede crear destinos (403)",
+      "metodo": "POST",
+      "ruta": "/api/destinos",
+      "status": 403,
+      "tiempo_ms": 4,
+      "aserciones": [
+        {
+          "nombre": "Responde 403",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Listar destinos filtrando por categoría y región",
+      "metodo": "GET",
+      "ruta": "/api/destinos?categoria=postman-1795291401530&region=antofagasta",
+      "status": 200,
+      "tiempo_ms": 7,
+      "aserciones": [
+        {
+          "nombre": "Responde 200",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye el destino creado",
+          "ok": true
+        },
+        {
+          "nombre": "Todos cumplen ambos filtros",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Filtro inválido responde 400",
+      "metodo": "GET",
+      "ruta": "/api/destinos?region=Valpara%C3%ADso!",
+      "status": 400,
+      "tiempo_ms": 2,
+      "aserciones": [
+        {
+          "nombre": "Responde 400",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Leer destino por ID",
+      "metodo": "GET",
+      "ruta": "/api/destinos/493",
+      "status": 200,
+      "tiempo_ms": 4,
+      "aserciones": [
+        {
+          "nombre": "Responde 200",
+          "ok": true
+        },
+        {
+          "nombre": "Leído desde PostgreSQL",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "ID de destino no válido (400)",
+      "metodo": "GET",
+      "ruta": "/api/destinos/no-es-id",
+      "status": 400,
+      "tiempo_ms": 2,
+      "aserciones": [
+        {
+          "nombre": "Responde 400",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Destino inexistente (404)",
+      "metodo": "GET",
+      "ruta": "/api/destinos/2147483647",
+      "status": 404,
+      "tiempo_ms": 3,
+      "aserciones": [
+        {
+          "nombre": "Responde 404",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Actualizar destino (admin)",
+      "metodo": "PUT",
+      "ruta": "/api/destinos/493",
+      "status": 200,
+      "tiempo_ms": 6,
+      "aserciones": [
+        {
+          "nombre": "Responde 200",
+          "ok": true
+        },
+        {
+          "nombre": "Horario actualizado",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Actualizar sin campos (400)",
+      "metodo": "PUT",
+      "ruta": "/api/destinos/493",
+      "status": 400,
+      "tiempo_ms": 3,
+      "aserciones": [
+        {
+          "nombre": "Responde 400",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Categoría con destinos activos no se elimina (409)",
+      "metodo": "DELETE",
+      "ruta": "/api/categorias/16",
+      "status": 409,
+      "tiempo_ms": 5,
+      "aserciones": [
+        {
+          "nombre": "Responde 409",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        },
+        {
+          "nombre": "Informa cuántos destinos activos tiene",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Listar favoritos sin sesión (401)",
+      "metodo": "GET",
+      "ruta": "/api/favoritos",
+      "status": 401,
+      "tiempo_ms": 2,
+      "aserciones": [
+        {
+          "nombre": "Responde 401",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Agregar favorito",
+      "metodo": "POST",
+      "ruta": "/api/favoritos",
+      "status": 201,
+      "tiempo_ms": 7,
+      "aserciones": [
+        {
+          "nombre": "Responde 201",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Favorito duplicado (409)",
+      "metodo": "POST",
+      "ruta": "/api/favoritos",
+      "status": 409,
+      "tiempo_ms": 4,
+      "aserciones": [
+        {
+          "nombre": "Responde 409",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Listar mis favoritos",
+      "metodo": "GET",
+      "ruta": "/api/favoritos",
+      "status": 200,
+      "tiempo_ms": 5,
+      "aserciones": [
+        {
+          "nombre": "Responde 200",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye el favorito",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Quitar favorito",
+      "metodo": "DELETE",
+      "ruta": "/api/favoritos/11",
+      "status": 200,
+      "tiempo_ms": 4,
+      "aserciones": [
+        {
+          "nombre": "Responde 200",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Confirmar favorito quitado",
+      "metodo": "GET",
+      "ruta": "/api/favoritos",
+      "status": 200,
+      "tiempo_ms": 4,
+      "aserciones": [
+        {
+          "nombre": "Responde 200",
+          "ok": true
+        },
+        {
+          "nombre": "Ya no está",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Calificar sin sesión (401)",
+      "metodo": "POST",
+      "ruta": "/api/destinos/493/opiniones",
+      "status": 401,
+      "tiempo_ms": 2,
+      "aserciones": [
+        {
+          "nombre": "Responde 401",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Puntuación fuera de rango (400)",
+      "metodo": "POST",
+      "ruta": "/api/destinos/493/opiniones",
+      "status": 400,
+      "tiempo_ms": 4,
+      "aserciones": [
+        {
+          "nombre": "Responde 400",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Calificar y reseñar un destino",
+      "metodo": "POST",
+      "ruta": "/api/destinos/493/opiniones",
+      "status": 200,
+      "tiempo_ms": 5,
+      "aserciones": [
+        {
+          "nombre": "Responde 200",
+          "ok": true
+        },
+        {
+          "nombre": "Guarda la puntuación",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Actualizar la misma opinión",
+      "metodo": "POST",
+      "ruta": "/api/destinos/493/opiniones",
+      "status": 200,
+      "tiempo_ms": 5,
+      "aserciones": [
+        {
+          "nombre": "Responde 200",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Resumen público de opiniones",
+      "metodo": "GET",
+      "ruta": "/api/destinos/493/opiniones",
+      "status": 200,
+      "tiempo_ms": 14,
+      "aserciones": [
+        {
+          "nombre": "Responde 200",
+          "ok": true
+        },
+        {
+          "nombre": "Una sola opinión con promedio 5",
+          "ok": true
+        },
+        {
+          "nombre": "No expone correos",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Mi opinión sobre el destino",
+      "metodo": "GET",
+      "ruta": "/api/destinos/493/opinion",
+      "status": 200,
+      "tiempo_ms": 5,
+      "aserciones": [
+        {
+          "nombre": "Responde 200",
+          "ok": true
+        },
+        {
+          "nombre": "Devuelve la opinión propia",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Sugerir imagen sin aceptar las condiciones (400)",
+      "metodo": "POST",
+      "ruta": "/api/destinos/493/sugerencias-imagenes",
+      "status": 400,
+      "tiempo_ms": 48,
+      "aserciones": [
+        {
+          "nombre": "Responde 400",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Sugerir imagen de un destino",
+      "metodo": "POST",
+      "ruta": "/api/destinos/493/sugerencias-imagenes",
+      "status": 201,
+      "tiempo_ms": 53,
+      "aserciones": [
+        {
+          "nombre": "Responde 201",
+          "ok": true
+        },
+        {
+          "nombre": "Queda pendiente",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Turista no puede ver pendientes (403)",
+      "metodo": "GET",
+      "ruta": "/api/sugerencias-imagenes",
+      "status": 403,
+      "tiempo_ms": 3,
+      "aserciones": [
+        {
+          "nombre": "Responde 403",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Imagen pendiente no es pública (404)",
+      "metodo": "GET",
+      "ruta": "/api/destinos/493/imagenes-comunidad/5/archivo",
+      "status": 404,
+      "tiempo_ms": 5,
+      "aserciones": [
+        {
+          "nombre": "Responde 404",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Listar imágenes pendientes (admin)",
+      "metodo": "GET",
+      "ruta": "/api/sugerencias-imagenes",
+      "status": 200,
+      "tiempo_ms": 5,
+      "aserciones": [
+        {
+          "nombre": "Responde 200",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye la sugerencia",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Ver archivo pendiente (admin)",
+      "metodo": "GET",
+      "ruta": "/api/sugerencias-imagenes/5/archivo",
+      "status": 200,
+      "tiempo_ms": 5,
+      "aserciones": [
+        {
+          "nombre": "Responde 200",
+          "ok": true
+        },
+        {
+          "nombre": "Es una imagen PNG",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Aprobar imagen (admin)",
+      "metodo": "PATCH",
+      "ruta": "/api/sugerencias-imagenes/5/revision",
+      "status": 200,
+      "tiempo_ms": 8,
+      "aserciones": [
+        {
+          "nombre": "Responde 200",
+          "ok": true
+        },
+        {
+          "nombre": "Queda aprobada",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Revisar una imagen ya revisada (409)",
+      "metodo": "PATCH",
+      "ruta": "/api/sugerencias-imagenes/5/revision",
+      "status": 409,
+      "tiempo_ms": 5,
+      "aserciones": [
+        {
+          "nombre": "Responde 409",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Imágenes aprobadas del destino (público)",
+      "metodo": "GET",
+      "ruta": "/api/destinos/493/imagenes-comunidad",
+      "status": 200,
+      "tiempo_ms": 5,
+      "aserciones": [
+        {
+          "nombre": "Responde 200",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye la imagen aprobada",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Archivo de imagen aprobada (público)",
+      "metodo": "GET",
+      "ruta": "/api/destinos/493/imagenes-comunidad/5/archivo",
+      "status": 200,
+      "tiempo_ms": 4,
+      "aserciones": [
+        {
+          "nombre": "Responde 200",
+          "ok": true
+        },
+        {
+          "nombre": "Es una imagen PNG",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Turista no puede listar usuarios (403)",
+      "metodo": "GET",
+      "ruta": "/api/usuarios",
+      "status": 403,
+      "tiempo_ms": 3,
+      "aserciones": [
+        {
+          "nombre": "Responde 403",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Listar usuarios sin hashes",
+      "metodo": "GET",
+      "ruta": "/api/usuarios",
+      "status": 200,
+      "tiempo_ms": 3,
+      "aserciones": [
+        {
+          "nombre": "Responde 200",
+          "ok": true
+        },
+        {
+          "nombre": "Nunca expone password_hash",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye la cuenta registrada",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Editar nombre de un usuario",
+      "metodo": "PATCH",
+      "ruta": "/api/usuarios/19",
+      "status": 200,
+      "tiempo_ms": 7,
+      "aserciones": [
+        {
+          "nombre": "Responde 200",
+          "ok": true
+        },
+        {
+          "nombre": "Nombre actualizado",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Admin no puede quitarse su propio rol (400)",
+      "metodo": "PATCH",
+      "ruta": "/api/usuarios/1",
+      "status": 400,
+      "tiempo_ms": 3,
+      "aserciones": [
+        {
+          "nombre": "Responde 400",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        },
+        {
+          "nombre": "Código SELF_DEMOTION",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Admin no puede eliminarse a sí mismo (400)",
+      "metodo": "DELETE",
+      "ruta": "/api/usuarios/1",
+      "status": 400,
+      "tiempo_ms": 3,
+      "aserciones": [
+        {
+          "nombre": "Responde 400",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Quitar destino temporal (borrado lógico)",
+      "metodo": "DELETE",
+      "ruta": "/api/destinos/493",
+      "status": 200,
+      "tiempo_ms": 5,
+      "aserciones": [
+        {
+          "nombre": "Responde 200",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Destino quitado ya no se lee (404)",
+      "metodo": "GET",
+      "ruta": "/api/destinos/493",
+      "status": 404,
+      "tiempo_ms": 6,
+      "aserciones": [
+        {
+          "nombre": "Responde 404",
+          "ok": true
+        },
+        {
+          "nombre": "Responde JSON",
+          "ok": true
+        },
+        {
+          "nombre": "Incluye un mensaje de error",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Eliminar categoría temporal",
+      "metodo": "DELETE",
+      "ruta": "/api/categorias/16",
+      "status": 200,
+      "tiempo_ms": 8,
+      "aserciones": [
+        {
+          "nombre": "Responde 200",
+          "ok": true
+        },
+        {
+          "nombre": "Elimina el destino temporal ya quitado",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "solicitud": "Eliminar usuario temporal",
+      "metodo": "DELETE",
+      "ruta": "/api/usuarios/19",
+      "status": 200,
+      "tiempo_ms": 6,
+      "aserciones": [
+        {
+          "nombre": "Responde 200",
+          "ok": true
+        }
+      ]
+    }
+  ]
+}
