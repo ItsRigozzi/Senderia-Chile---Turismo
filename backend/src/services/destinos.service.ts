@@ -83,7 +83,7 @@ export async function updateDestino(id: number, fields: PersistedDestinoUpdate) 
   if (keys.length === 0) return undefined;
 
   const setClauses = keys.map((key, index) => `${key} = $${index + 1}`);
-  setClauses.push('updated_at = CURRENT_TIMESTAMP');
+  // updated_at lo actualiza el trigger trg_destinos_updated_at (init.sql).
   const values: unknown[] = keys.map((key) => fields[key]);
   values.push(id);
 
@@ -96,7 +96,7 @@ export async function updateDestino(id: number, fields: PersistedDestinoUpdate) 
 
 export async function deleteDestino(id: number) {
   const result = await pool.query(
-    'UPDATE destinos SET activo = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND activo = TRUE RETURNING id, nombre',
+    'UPDATE destinos SET activo = FALSE WHERE id = $1 AND activo = TRUE RETURNING id, nombre',
     [id],
   );
   return result.rows[0];

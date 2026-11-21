@@ -3,6 +3,7 @@ import { idParamSchema, revisionSugerenciaImagenSchema, sugerenciaImagenSchema }
 import { sugerenciasImagenesDirectory } from '../config/uploads.js';
 import { removeUploadedFile } from '../middleware/uploadSugerenciaImagen.js';
 import * as sugerenciasService from '../services/sugerenciasImagenes.service.js';
+import { sendServerError } from '../middleware/errorHandler.js';
 
 const parseId = (value: unknown, res: Response): number | undefined => {
   const parsed = idParamSchema.safeParse(value);
@@ -70,8 +71,7 @@ export const createSugerencia = async (req: Request, res: Response): Promise<voi
     });
   } catch (error) {
     await removeUploadedFile(req.file.path);
-    console.error('Error al guardar sugerencia de imagen:', error instanceof Error ? error.message : error);
-    res.status(503).json({ error: 'No se pudo guardar la sugerencia de imagen.' });
+    sendServerError(res, error, 'Error al guardar sugerencia de imagen:', 'No se pudo guardar la sugerencia de imagen.');
   }
 };
 
@@ -89,8 +89,7 @@ export const getImagenesAprobadas = async (req: Request, res: Response): Promise
       imagen_url: `/api/destinos/${destinationId}/imagenes-comunidad/${image.id}/archivo`,
     })) });
   } catch (error) {
-    console.error('Error al consultar imágenes aprobadas:', error instanceof Error ? error.message : error);
-    res.status(503).json({ error: 'No se pudieron consultar las imágenes aportadas.' });
+    sendServerError(res, error, 'Error al consultar imágenes aprobadas:', 'No se pudieron consultar las imágenes aportadas.');
   }
 };
 
@@ -102,8 +101,7 @@ export const getArchivoAprobado = async (req: Request, res: Response): Promise<v
     const image = await sugerenciasService.findApprovedImage(destinationId, imageId);
     sendImageFile(res, image, true);
   } catch (error) {
-    console.error('Error al leer imagen aprobada:', error instanceof Error ? error.message : error);
-    res.status(503).json({ error: 'No se pudo cargar la imagen.' });
+    sendServerError(res, error, 'Error al leer imagen aprobada:', 'No se pudo cargar la imagen.');
   }
 };
 
@@ -115,8 +113,7 @@ export const getPendientesAdmin = async (_req: Request, res: Response): Promise<
       imagen_url: `/api/sugerencias-imagenes/${suggestion.id}/archivo`,
     })) });
   } catch (error) {
-    console.error('Error al consultar sugerencias pendientes:', error instanceof Error ? error.message : error);
-    res.status(503).json({ error: 'No se pudieron consultar las sugerencias de imágenes.' });
+    sendServerError(res, error, 'Error al consultar sugerencias pendientes:', 'No se pudieron consultar las sugerencias de imágenes.');
   }
 };
 
@@ -127,8 +124,7 @@ export const getArchivoPendienteAdmin = async (req: Request, res: Response): Pro
     const image = await sugerenciasService.findPendingImage(imageId);
     sendImageFile(res, image, false);
   } catch (error) {
-    console.error('Error al leer imagen pendiente:', error instanceof Error ? error.message : error);
-    res.status(503).json({ error: 'No se pudo cargar la imagen.' });
+    sendServerError(res, error, 'Error al leer imagen pendiente:', 'No se pudo cargar la imagen.');
   }
 };
 
@@ -150,7 +146,6 @@ export const revisarSugerencia = async (req: Request, res: Response): Promise<vo
     }
     res.json({ mensaje: parsed.data.estado === 'aprobada' ? 'Imagen aprobada y publicada.' : 'Imagen rechazada.', sugerencia: result.result });
   } catch (error) {
-    console.error('Error al revisar sugerencia de imagen:', error instanceof Error ? error.message : error);
-    res.status(503).json({ error: 'No se pudo guardar la decisión.' });
+    sendServerError(res, error, 'Error al revisar sugerencia de imagen:', 'No se pudo guardar la decisión.');
   }
 };

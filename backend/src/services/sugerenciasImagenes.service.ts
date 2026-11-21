@@ -117,7 +117,7 @@ export async function reviewSuggestion(imageId: number, adminId: number, estado:
       const imageUrl = `/api/destinos/${suggestion.destino_id}/imagenes-comunidad/${imageId}/archivo`;
       await client.query(
         `UPDATE destinos
-         SET imagen_url = $2, updated_at = CURRENT_TIMESTAMP
+         SET imagen_url = $2
          WHERE id = $1
            AND (
              imagen_url IS NULL

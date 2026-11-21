@@ -1,14 +1,14 @@
 import { Request, Response } from 'express';
 import { favoritoSchema, idParamSchema } from '../validators/schemas.js';
 import * as favoritosService from '../services/favoritos.service.js';
+import { sendServerError } from '../middleware/errorHandler.js';
 
 export const getFavoritos = async (req: Request, res: Response): Promise<void> => {
   try {
     const favoritos = await favoritosService.listFavoritos(req.user!.userId);
     res.json({ favoritos });
   } catch (err) {
-    console.error('Error al obtener favoritos:', err);
-    res.status(503).json({ error: 'No se pudo consultar PostgreSQL' });
+    sendServerError(res, err, 'Error al obtener favoritos:', 'No se pudo consultar PostgreSQL');
   }
 };
 
@@ -32,8 +32,7 @@ export const addFavorito = async (req: Request, res: Response): Promise<void> =>
     }
     res.status(201).json({ mensaje: 'Destino agregado a favoritos', favorito: result.favorito });
   } catch (err) {
-    console.error('Error al agregar favorito:', err instanceof Error ? err.message : err);
-    res.status(503).json({ error: 'No se pudo escribir en PostgreSQL' });
+    sendServerError(res, err, 'Error al agregar favorito:', 'No se pudo escribir en PostgreSQL');
   }
 };
 
@@ -52,8 +51,6 @@ export const removeFavorito = async (req: Request, res: Response): Promise<void>
 
     res.json({ mensaje: 'Destino eliminado de favoritos' });
   } catch (err) {
-    console.error('Error al eliminar favorito:', err);
-    console.error('Error al eliminar favorito:', err instanceof Error ? err.message : err);
-    res.status(503).json({ error: 'No se pudo escribir en PostgreSQL' });
+    sendServerError(res, err, 'Error al eliminar favorito:', 'No se pudo escribir en PostgreSQL');
   }
 };

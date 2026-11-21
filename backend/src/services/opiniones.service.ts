@@ -59,8 +59,8 @@ export async function saveOpinion(destinoId: number, userId: number, input: Opin
      WHERE EXISTS (SELECT 1 FROM destinos WHERE id = $1 AND activo = TRUE)
      ON CONFLICT (usuario_id, destino_id) DO UPDATE
        SET puntuacion = EXCLUDED.puntuacion,
-           comentario = EXCLUDED.comentario,
-           updated_at = CURRENT_TIMESTAMP
+           comentario = EXCLUDED.comentario
+           -- updated_at lo actualiza el trigger trg_opiniones_updated_at (init.sql).
      RETURNING id, usuario_id, puntuacion, comentario, created_at, updated_at`,
     [destinoId, userId, input.puntuacion, input.comentario],
   );

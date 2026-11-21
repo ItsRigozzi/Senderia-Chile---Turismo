@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { idParamSchema, opinionSchema } from '../validators/schemas.js';
 import * as opinionesService from '../services/opiniones.service.js';
+import { sendServerError } from '../middleware/errorHandler.js';
 
 const parseDestinationId = (value: unknown, res: Response): number | undefined => {
   const parsed = idParamSchema.safeParse(value);
@@ -23,8 +24,7 @@ export const getOpiniones = async (req: Request, res: Response): Promise<void> =
     }
     res.json(data);
   } catch (error) {
-    console.error('Error al consultar opiniones:', error instanceof Error ? error.message : error);
-    res.status(503).json({ error: 'No se pudieron consultar las opiniones' });
+    sendServerError(res, error, 'Error al consultar opiniones:', 'No se pudieron consultar las opiniones');
   }
 };
 
@@ -36,8 +36,7 @@ export const getMiOpinion = async (req: Request, res: Response): Promise<void> =
     const opinion = await opinionesService.findOpinion(destinoId, req.user!.userId);
     res.json({ opinion: opinion ?? null });
   } catch (error) {
-    console.error('Error al consultar la opinión propia:', error instanceof Error ? error.message : error);
-    res.status(503).json({ error: 'No se pudo consultar tu opinión' });
+    sendServerError(res, error, 'Error al consultar la opinión propia:', 'No se pudo consultar tu opinión');
   }
 };
 
@@ -62,7 +61,6 @@ export const saveMiOpinion = async (req: Request, res: Response): Promise<void> 
     }
     res.json({ mensaje: 'Tu calificación fue guardada', opinion });
   } catch (error) {
-    console.error('Error al guardar opinión:', error instanceof Error ? error.message : error);
-    res.status(503).json({ error: 'No se pudo guardar tu opinión' });
+    sendServerError(res, error, 'Error al guardar opinión:', 'No se pudo guardar tu opinión');
   }
 };

@@ -1,14 +1,14 @@
 import { Request, Response } from 'express';
 import { idParamSchema, usuarioUpdateSchema } from '../validators/schemas.js';
 import * as usuariosService from '../services/usuarios.service.js';
+import { sendServerError } from '../middleware/errorHandler.js';
 
 export const getUsuarios = async (_req: Request, res: Response): Promise<void> => {
   try {
     const usuarios = await usuariosService.listUsuarios();
     res.json({ usuarios });
   } catch (err) {
-    console.error('Error al obtener usuarios:', err);
-    res.status(503).json({ error: 'No se pudo consultar PostgreSQL' });
+    sendServerError(res, err, 'Error al obtener usuarios:', 'No se pudo consultar PostgreSQL');
   }
 };
 
@@ -29,15 +29,27 @@ export const updateUsuario = async (req: Request, res: Response): Promise<void> 
       res.status(400).json({ error: 'El ID del usuario debe ser un entero positivo' });
       return;
     }
-    const usuario = await usuariosService.updateUsuario(parsedId.data, parsed.data);
+    const id = parsedId.data;
+
+    // Un administrador no puede quitarse el rol a sí mismo.
+    if (parsed.data.rol && parsed.data.rol !== 'admin' && req.user?.userId === id) {
+      res.status(400).json({ error: 'No puedes quitarte el rol de administrador a ti mismo', code: 'SELF_DEMOTION' });
+      return;
+    }
+
+    const result = await usuariosService.updateUsuario(id, parsed.data);
+    if (result === 'LAST_ADMIN') {
+      res.status(409).json({ error: 'No se puede quitar el rol al último administrador', code: 'LAST_ADMIN' });
+      return;
+    }
+    const usuario = result;
     if (!usuario) {
       res.status(404).json({ error: 'Usuario no encontrado' });
       return;
     }
     res.json({ mensaje: 'Usuario actualizado exitosamente', usuario });
   } catch (err) {
-    console.error('Error al actualizar usuario:', err instanceof Error ? err.message : err);
-    res.status(503).json({ error: 'No se pudo escribir en PostgreSQL' });
+    sendServerError(res, err, 'Error al actualizar usuario:', 'No se pudo escribir en PostgreSQL');
   }
 };
 
@@ -56,14 +68,18 @@ export const deleteUsuario = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const usuario = await usuariosService.deleteUsuario(id);
+    const result = await usuariosService.deleteUsuario(id);
+    if (result === 'LAST_ADMIN') {
+      res.status(409).json({ error: 'No se puede eliminar al último administrador', code: 'LAST_ADMIN' });
+      return;
+    }
+    const usuario = result;
     if (!usuario) {
       res.status(404).json({ error: 'Usuario no encontrado' });
       return;
     }
     res.json({ mensaje: 'Usuario eliminado exitosamente', usuario });
   } catch (err) {
-    console.error('Error al eliminar usuario:', err instanceof Error ? err.message : err);
-    res.status(503).json({ error: 'No se pudo escribir en PostgreSQL' });
+    sendServerError(res, err, 'Error al eliminar usuario:', 'No se pudo escribir en PostgreSQL');
   }
 };

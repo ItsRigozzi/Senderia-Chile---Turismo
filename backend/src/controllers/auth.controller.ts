@@ -28,6 +28,12 @@ import {
   sendPasswordResetCodeEmail,
   sendVerificationCodeEmail,
 } from '../services/email.service.js';
+import {
+  clearLoginFailures,
+  getLoginLockSeconds,
+  registerLoginFailure,
+} from '../services/loginAttempts.service.js';
+import { sendServerError } from '../middleware/errorHandler.js';
 
 const SALT_ROUNDS = 10;
 const GENERIC_RESET_MESSAGE = 'Si la cuenta puede recuperar su contraseña, recibirás un código en el correo registrado.';
@@ -38,9 +44,9 @@ const getJwtSecret = (): string => {
   return secret;
 };
 
+// 503 si PostgreSQL no está disponible; 500 para cualquier otro error inesperado.
 const databaseUnavailable = (res: Response, error?: unknown): void => {
-  if (error) console.error('Error de PostgreSQL:', error instanceof Error ? error.message : error);
-  res.status(503).json({ error: 'Base de datos no disponible; la autenticación requiere PostgreSQL.' });
+  sendServerError(res, error, 'Error en autenticación:', 'No se pudo completar la autenticación. Intenta nuevamente.');
 };
 
 const emailDeliveryUnavailable = (res: Response): void => {
@@ -63,7 +69,7 @@ const issueSession = (user: {
   const token = jwt.sign(
     { userId: user.id, email: user.email, rol: user.rol, passwordChangedAt },
     getJwtSecret(),
-    { expiresIn: '24h' },
+    { expiresIn: '24h', algorithm: 'HS256' },
   );
   return {
     usuario: { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol },
@@ -128,17 +134,28 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
+  const clientIp = req.ip ?? 'desconocida';
+  const lockSeconds = getLoginLockSeconds(clientIp, parsed.data.email);
+  if (lockSeconds > 0) {
+    res.setHeader('Retry-After', String(lockSeconds));
+    res.status(429).json({
+      error: `Demasiados intentos fallidos. Intenta nuevamente en ${Math.ceil(lockSeconds / 60)} minutos.`,
+      code: 'LOGIN_ATTEMPTS_EXCEEDED',
+    });
+    return;
+  }
+
   try {
     const user = await findAccountByEmail(parsed.data.email);
-    if (!user || !user.password_hash) {
+    const passwordMatch = user?.password_hash
+      ? await bcrypt.compare(parsed.data.password, user.password_hash)
+      : false;
+    if (!user || !passwordMatch) {
+      registerLoginFailure(clientIp, parsed.data.email);
       res.status(401).json({ error: 'Credenciales incorrectas' });
       return;
     }
-    const passwordMatch = await bcrypt.compare(parsed.data.password, user.password_hash);
-    if (!passwordMatch) {
-      res.status(401).json({ error: 'Credenciales incorrectas' });
-      return;
-    }
+    clearLoginFailures(clientIp, parsed.data.email);
     if (!user.email_verificado) {
       res.status(403).json({
         error: 'Verifica tu correo antes de iniciar sesión.',

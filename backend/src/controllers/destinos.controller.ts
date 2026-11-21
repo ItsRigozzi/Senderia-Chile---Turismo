@@ -4,6 +4,7 @@ import * as destinosService from '../services/destinos.service.js';
 import type { PersistedDestinoUpdate } from '../services/destinos.service.js';
 import { GeocodingError, geocodeDestination } from '../services/geocoding.service.js';
 import { hasPostgresCode } from './databaseErrors.js';
+import { sendServerError } from '../middleware/errorHandler.js';
 
 const resolveCoordinates = async (
   nombre: string,
@@ -49,8 +50,7 @@ export const getDestinos = async (req: Request, res: Response): Promise<void> =>
     const destinos = await destinosService.listDestinos(parsedQuery.data);
     res.json({ destinos, source: 'database' });
   } catch (err) {
-    console.error('Error al obtener destinos:', err instanceof Error ? err.message : err);
-    res.status(503).json({ error: 'No se pudo consultar PostgreSQL' });
+    sendServerError(res, err, 'Error al obtener destinos:', 'No se pudo consultar PostgreSQL');
   }
 };
 
@@ -72,8 +72,7 @@ export const getDestinoById = async (req: Request, res: Response): Promise<void>
       res.status(400).json({ error: 'El ID del destino no es válido' });
       return;
     }
-    console.error('Error al obtener destino:', err);
-    res.status(503).json({ error: 'No se pudo consultar PostgreSQL' });
+    sendServerError(res, err, 'Error al obtener destino:', 'No se pudo consultar PostgreSQL');
   }
 };
 
@@ -101,8 +100,7 @@ export const createDestino = async (req: Request, res: Response): Promise<void> 
       res.status(400).json({ error: 'La categoría o región indicada no existe' });
       return;
     }
-    console.error('Error al crear destino:', err instanceof Error ? err.message : err);
-    res.status(503).json({ error: 'No se pudo escribir en PostgreSQL' });
+    sendServerError(res, err, 'Error al crear destino:', 'No se pudo escribir en PostgreSQL');
   }
 };
 
@@ -155,8 +153,7 @@ export const updateDestino = async (req: Request, res: Response): Promise<void> 
       res.status(400).json({ error: 'La categoría o región indicada no existe' });
       return;
     }
-    console.error('Error al actualizar destino:', err instanceof Error ? err.message : err);
-    res.status(503).json({ error: 'No se pudo escribir en PostgreSQL' });
+    sendServerError(res, err, 'Error al actualizar destino:', 'No se pudo escribir en PostgreSQL');
   }
 };
 
@@ -174,7 +171,6 @@ export const deleteDestino = async (req: Request, res: Response): Promise<void> 
     }
     res.json({ mensaje: 'Destino quitado de la aplicación. El registro se conserva en la base de datos.', destino });
   } catch (err) {
-    console.error('Error al eliminar destino:', err instanceof Error ? err.message : err);
-    res.status(503).json({ error: 'No se pudo escribir en PostgreSQL' });
+    sendServerError(res, err, 'Error al eliminar destino:', 'No se pudo escribir en PostgreSQL');
   }
 };
