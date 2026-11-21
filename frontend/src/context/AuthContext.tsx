@@ -1,5 +1,5 @@
 import React, { useState, useEffect, type ReactNode } from 'react';
-import { authService, api } from '../services/api';
+import { authService, api, SESSION_EXPIRED_EVENT } from '../services/api';
 import { AuthContext, type User } from './AuthContextValue';
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -30,6 +30,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     };
     void restoreSession();
+  }, []);
+
+  // Si la API responde 401 (sesión vencida o inválida), se limpia el estado sin recargar la app.
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      setUser(null);
+      setToken(null);
+    };
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
   }, []);
 
   const login = async (email: string, password: string) => {

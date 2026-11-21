@@ -3,9 +3,9 @@ import { IonContent, IonHeader, IonPage, IonSpinner, IonToolbar } from '@ionic/r
 import { useNavigate } from 'react-router-dom';
 import { categoriasService, destinosService } from '../services/api';
 import type { Categoria, DestinoFiltros, Region } from '../services/api';
-import { useAuth } from '../context/useAuth';
-import { getApiErrorBody } from '../services/apiError';
+import { getApiErrorMessage } from '../services/apiError';
 import BrandLink from '../components/BrandLink';
+import AdminNav from '../components/AdminNav';
 import FiltrosDestinos from '../components/FiltrosDestinos';
 import type { FiltroDestino } from '../components/FiltrosDestinos';
 import { coincideBusquedaDestino, normalizarTexto } from '../utils/busquedaDestinos';
@@ -39,7 +39,6 @@ const AdminDashboard: React.FC = () => {
   const [actualizandoTabla, setActualizandoTabla] = useState(true);
   const ultimaPeticion = useRef(0);
   const navigate = useNavigate();
-  const { logout } = useAuth();
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -51,7 +50,7 @@ const AdminDashboard: React.FC = () => {
       setCategorias(categoriasResponse.data.categorias || []);
       setRegiones(regionesResponse.data.regiones || []);
     } catch (err: unknown) {
-      setError(getApiErrorBody(err)?.error || 'No se pudo cargar la información desde PostgreSQL.');
+      setError(getApiErrorMessage(err, 'No se pudo cargar la información desde PostgreSQL.'));
     } finally {
       setLoading(false);
     }
@@ -75,7 +74,7 @@ const AdminDashboard: React.FC = () => {
       setTotalDestinos((todos.destinos || []).length);
     } catch (err: unknown) {
       if (peticion !== ultimaPeticion.current) return;
-      setError(getApiErrorBody(err)?.error || 'No se pudieron cargar los destinos desde PostgreSQL.');
+      setError(getApiErrorMessage(err, 'No se pudieron cargar los destinos desde PostgreSQL.'));
     } finally {
       if (peticion === ultimaPeticion.current) setActualizandoTabla(false);
     }
@@ -146,7 +145,7 @@ const AdminDashboard: React.FC = () => {
       resetForm();
       await loadDestinos();
     } catch (err: unknown) {
-      setError(getApiErrorBody(err)?.error || 'No se pudo guardar el destino. Verifica los campos y la conexión.');
+      setError(getApiErrorMessage(err, 'No se pudo guardar el destino. Verifica los campos y la conexión.'));
     } finally { setSaving(false); }
   };
 
@@ -158,7 +157,7 @@ const AdminDashboard: React.FC = () => {
       setNotice('Destino quitado de la aplicación. Sus datos se conservaron en la base de datos.');
       await loadDestinos();
     } catch (err: unknown) {
-      setError(getApiErrorBody(err)?.error || 'No se pudo quitar el destino de la aplicación.');
+      setError(getApiErrorMessage(err, 'No se pudo quitar el destino de la aplicación.'));
     }
   };
 
@@ -173,9 +172,7 @@ const AdminDashboard: React.FC = () => {
       </IonHeader>
       <IonContent>
         <div className="admin-layout">
-          <aside className="admin-sidebar">
-            <button className="admin-nav-item" onClick={() => navigate('/explorar')}>Volver a la aplicación ↗</button>
-            <button className="admin-nav-item" onClick={() => { logout(); window.location.replace('/login'); }}>Cerrar sesión</button>
+          <AdminNav>
             <div className={`admin-sidebar-filtros ${filtrosAbiertos ? 'is-open' : 'is-collapsed'}`}>
               <button
                 type="button"
@@ -198,8 +195,7 @@ const AdminDashboard: React.FC = () => {
                 />
               </div>}
             </div>
-            <button className="admin-nav-item" onClick={() => navigate('/admin/sugerencias-imagenes')}>Imágenes sugeridas →</button>
-          </aside>
+          </AdminNav>
           <main className="admin-main">
             <div className="admin-header-row"><div><h1>Destinos turísticos</h1><p>Los cambios se guardan en PostgreSQL.</p></div><button onClick={() => { resetForm(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Nuevo destino</button></div>
             {error && <p role="alert" style={{ color: '#B91C1C' }}>{error}</p>}
@@ -213,7 +209,7 @@ const AdminDashboard: React.FC = () => {
                 <label>Latitud (opcional)<input type="number" step="any" min="-90" max="90" placeholder="Ej. -33.42613" value={form.latitud} onChange={(e) => updateField('latitud', e.target.value)} /></label>
                 <label>Longitud (opcional)<input type="number" step="any" min="-180" max="180" placeholder="Ej. -70.43477" value={form.longitud} onChange={(e) => updateField('longitud', e.target.value)} /></label>
                 <label>Horario<input maxLength={255} value={form.horario} onChange={(e) => updateField('horario', e.target.value)} /></label>
-                <label>Imagen (URL)<input type="url" maxLength={500} value={form.imagen_url} onChange={(e) => updateField('imagen_url', e.target.value)} /></label>
+                <label>Imagen (URL)<input type="text" inputMode="url" maxLength={500} placeholder="https://… o /images/destinos/…" value={form.imagen_url} onChange={(e) => updateField('imagen_url', e.target.value)} /></label>
                 <label>Descripción<textarea value={form.descripcion} onChange={(e) => updateField('descripcion', e.target.value)} /></label>
                 <label>Condiciones de acceso<textarea value={form.condiciones_acceso} onChange={(e) => updateField('condiciones_acceso', e.target.value)} /></label>
                 <p className="admin-form-help">Completa ambas coordenadas si las conoces. Si las dejas vacías, Sendería las buscará con Geoapify usando el nombre y la región seleccionada; para eso se requiere GEOAPIFY_API_KEY en backend/.env. Si la búsqueda no encuentra el lugar, podrás ingresar las coordenadas manualmente.</p>

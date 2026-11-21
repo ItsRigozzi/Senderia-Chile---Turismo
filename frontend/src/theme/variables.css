@@ -1156,6 +1156,25 @@ body {
   border-bottom: none;
 }
 
+/* Controles dentro de las tablas del panel (rol de usuario, edición de nombre). */
+.admin-table select,
+.admin-table input {
+  color-scheme: light;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid #CBD5E1;
+  border-radius: 7px;
+  background: #fff;
+  color: #0F172A;
+  font: inherit;
+}
+
+.admin-table select:disabled {
+  background: #F1F5F9;
+  color: #64748B;
+  cursor: not-allowed;
+}
+
 .admin-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getApiErrorBody } from '../services/apiError';
+import { getApiErrorMessage } from '../services/apiError';
 import { sugerenciasImagenesService } from '../services/api';
 import type { SugerenciaImagenAdmin } from '../services/api';
 
@@ -29,7 +29,7 @@ const AdminSugerenciaImagenCard: React.FC<Props> = ({ sugerencia, procesando, on
         else URL.revokeObjectURL(objectUrl);
       })
       .catch((err: unknown) => {
-        if (activa) setErrorImagen(getApiErrorBody(err)?.error || 'No se pudo cargar la imagen.');
+        if (activa) setErrorImagen(getApiErrorMessage(err, 'No se pudo cargar la imagen.'));
       })
       .finally(() => {
         if (activa) setCargandoImagen(false);

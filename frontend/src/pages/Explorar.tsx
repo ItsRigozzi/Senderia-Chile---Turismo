@@ -6,7 +6,7 @@ import {
 import { useAuth } from '../context/useAuth';
 import { categoriasService, destinosService, publicAssetUrl } from '../services/api';
 import type { Categoria, DestinoFiltros, Region } from '../services/api';
-import { getApiErrorBody } from '../services/apiError';
+import { getApiErrorMessage } from '../services/apiError';
 import { useNavigate } from 'react-router-dom';
 import BrandLink from '../components/BrandLink';
 import FiltrosDestinos from '../components/FiltrosDestinos';
@@ -93,7 +93,7 @@ const Explorar: React.FC = () => {
       }
     } catch (err: unknown) {
       if (peticion !== ultimaPeticion.current) return;
-      setError(getApiErrorBody(err)?.error || 'No se pudo conectar con la API. Comprueba que PostgreSQL y el backend estén activos.');
+      setError(getApiErrorMessage(err, 'No se pudo conectar con la API. Comprueba que PostgreSQL y el backend estén activos.'));
     } finally {
       if (peticion === ultimaPeticion.current) setLoading(false);
     }
@@ -241,7 +241,7 @@ const Explorar: React.FC = () => {
                   )}
                   <button onClick={() => navigate('/favoritos')} style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #CBD5E1', background: '#fff', color: '#0F172A', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>♡ Favoritos</button>
                   <button
-                    onClick={() => { logout(); window.location.replace('/login'); }}
+                    onClick={() => { logout(); navigate('/login', { replace: true }); }}
                     style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#64748B', fontSize: '12px', cursor: 'pointer' }}
                   >
                     Cerrar sesión

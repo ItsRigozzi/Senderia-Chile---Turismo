@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
-import { getApiErrorBody } from '../services/apiError';
+import { getApiErrorMessage } from '../services/apiError';
 import { sugerenciasImagenesService } from '../services/api';
 
 interface Props {
@@ -59,7 +59,7 @@ const SugerenciasImagenesDestino: React.FC<Props> = ({ destinoId }) => {
       const input = document.getElementById(`sugerencia-imagen-${destinoId}`) as HTMLInputElement | null;
       if (input) input.value = '';
     } catch (err: unknown) {
-      setError(getApiErrorBody(err)?.error || 'No se pudo enviar la imagen.');
+      setError(getApiErrorMessage(err, 'No se pudo enviar la imagen.'));
     } finally {
       setEnviando(false);
     }
