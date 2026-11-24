@@ -5,6 +5,7 @@ import BrandLink from '../components/BrandLink';
 import PasswordInput from '../components/PasswordInput';
 import { authService } from '../services/api';
 import { getApiErrorBody, getApiErrorMessage } from '../services/apiError';
+import { validarCodigo, validarContrasenaNueva, validarCorreo } from '../utils/validacionFormulario';
 
 const RecuperarContrasena: React.FC = () => {
   const navigate = useNavigate();
@@ -19,6 +20,11 @@ const RecuperarContrasena: React.FC = () => {
 
   const handleRequest = async (event: React.FormEvent) => {
     event.preventDefault();
+    const errorCorreo = validarCorreo(email);
+    if (errorCorreo) {
+      setError(errorCorreo);
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -35,16 +41,9 @@ const RecuperarContrasena: React.FC = () => {
   const handleReset = async (event: React.FormEvent) => {
     event.preventDefault();
     setError('');
-    if (password !== confirmPassword) {
-      setError('Las contraseñas no coinciden.');
-      return;
-    }
-    if (password.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres.');
-      return;
-    }
-    if (!/\p{L}/u.test(password) || !/\d/.test(password)) {
-      setError('La contraseña debe incluir al menos una letra y un número.');
+    const errorValidacion = validarCodigo(codigo) || validarContrasenaNueva(password, confirmPassword);
+    if (errorValidacion) {
+      setError(errorValidacion);
       return;
     }
     setLoading(true);
@@ -100,7 +99,7 @@ const RecuperarContrasena: React.FC = () => {
             {notice && <p className="auth-success-message" role="status">{notice}</p>}
 
             {step === 'request' ? (
-              <form onSubmit={(event) => { void handleRequest(event); }}>
+              <form noValidate onSubmit={(event) => { void handleRequest(event); }}>
                 <div className="input-group">
                   <label className="input-label" htmlFor="reset-email">Correo electrónico</label>
                   <input id="reset-email" className="input-control" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="tu@correo.com" />
@@ -108,7 +107,7 @@ const RecuperarContrasena: React.FC = () => {
                 <button className="custom-primary-btn" type="submit" disabled={loading}>{loading ? 'Enviando...' : 'Enviar código'}</button>
               </form>
             ) : (
-              <form onSubmit={(event) => { void handleReset(event); }}>
+              <form noValidate onSubmit={(event) => { void handleReset(event); }}>
                 <div className="input-group">
                   <label className="input-label" htmlFor="reset-code">Código de 6 dígitos</label>
                   <input id="reset-code" className="input-control auth-code-input" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required value={codigo} onChange={(event) => setCodigo(event.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="123456" />
