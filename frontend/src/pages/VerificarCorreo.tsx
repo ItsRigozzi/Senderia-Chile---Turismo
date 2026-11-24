@@ -6,6 +6,7 @@ import { useAuth } from '../context/useAuth';
 import { authService } from '../services/api';
 import { getApiErrorMessage } from '../services/apiError';
 import { getAuthReturnPath } from '../utils/navigation';
+import { validarCodigo, validarCorreo } from '../utils/validacionFormulario';
 
 const VerificarCorreo: React.FC = () => {
   const location = useLocation();
@@ -20,6 +21,11 @@ const VerificarCorreo: React.FC = () => {
 
   const handleVerify = async (event: React.FormEvent) => {
     event.preventDefault();
+    const errorValidacion = validarCorreo(email) || validarCodigo(codigo);
+    if (errorValidacion) {
+      setError(errorValidacion);
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -33,6 +39,11 @@ const VerificarCorreo: React.FC = () => {
   };
 
   const handleResend = async () => {
+    const errorCorreo = validarCorreo(email);
+    if (errorCorreo) {
+      setError(errorCorreo);
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -65,7 +76,7 @@ const VerificarCorreo: React.FC = () => {
             </header>
             {error && <div className="auth-error-message" role="alert">{error}</div>}
             {notice && <p className="auth-success-message" role="status">{notice}</p>}
-            <form onSubmit={handleVerify}>
+            <form noValidate onSubmit={handleVerify}>
               <div className="input-group">
                 <label className="input-label" htmlFor="verification-email">Correo electrónico</label>
                 <input id="verification-email" className="input-control" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} />

@@ -7,6 +7,7 @@ import { useAuth } from '../context/useAuth';
 import { getApiErrorBody, getApiErrorMessage } from '../services/apiError';
 import BrandLink from '../components/BrandLink';
 import PasswordInput from '../components/PasswordInput';
+import { validarContrasenaNueva, validarCorreo } from '../utils/validacionFormulario';
 
 const Registro: React.FC = () => {
   const [nombre, setNombre] = useState('');
@@ -20,23 +21,14 @@ const Registro: React.FC = () => {
   const { register } = useAuth();
 
   const handleRegister = async () => {
-    if (!nombre || !email || !password || !confirmPassword) {
-      setError('Por favor completa todos los campos');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError('Las contraseñas no coinciden');
-      return;
-    }
-
-    if (password.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres');
-      return;
-    }
-
-    if (!/\p{L}/u.test(password) || !/\d/.test(password)) {
-      setError('La contraseña debe incluir al menos una letra y un número');
+    const nombreLimpio = nombre.trim();
+    const errorValidacion =
+      (!nombreLimpio ? 'Ingresa tu nombre completo.' : '')
+      || (nombreLimpio.length < 2 ? 'El nombre debe tener al menos 2 letras.' : '')
+      || validarCorreo(email)
+      || validarContrasenaNueva(password, confirmPassword);
+    if (errorValidacion) {
+      setError(errorValidacion);
       return;
     }
 
@@ -112,7 +104,7 @@ const Registro: React.FC = () => {
               </div>
             )}
 
-            <form onSubmit={(e) => { e.preventDefault(); handleRegister(); }}>
+            <form noValidate onSubmit={(e) => { e.preventDefault(); handleRegister(); }}>
               <div className="input-group">
                 <label className="input-label">
                   Nombre completo <span style={{ color: '#EF4444' }}>*</span>
@@ -139,7 +131,7 @@ const Registro: React.FC = () => {
                   placeholder="Correo electrónico"
                   required
                 />
-                <small>Por favor, introduce tu correo electrónico</small>
+                <small>Ejemplo: nombre@gmail.com</small>
               </div>
 
               <div className="input-group">
@@ -150,8 +142,6 @@ const Registro: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Mínimo 8 caracteres, con letras y números"
-                  minLength={8}
-                  pattern=".*[A-Za-z0-9].*"
                   autoComplete="new-password"
                   required
                 />

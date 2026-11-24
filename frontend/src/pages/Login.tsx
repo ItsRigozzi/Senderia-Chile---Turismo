@@ -10,6 +10,7 @@ import { clearLoginNotice, peekLoginNotice } from '../utils/loginNotice';
 import BrandLink from '../components/BrandLink';
 import PasswordInput from '../components/PasswordInput';
 import GoogleSignInButton from '../components/GoogleSignInButton';
+import { validarCorreo } from '../utils/validacionFormulario';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -34,8 +35,9 @@ const Login: React.FC = () => {
 
   const handleLogin = async () => {
     setVerificationEmail('');
-    if (!email || !password) {
-      setError('Por favor completa todos los campos');
+    const errorValidacion = validarCorreo(email) || (!password ? 'Ingresa tu contraseña.' : '');
+    if (errorValidacion) {
+      setError(errorValidacion);
       return;
     }
 
@@ -113,7 +115,7 @@ const Login: React.FC = () => {
 
             {notice && <p className="auth-success-message" role="status">{notice}</p>}
 
-            <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
+            <form noValidate onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
               <div className="input-group">
                 <label className="input-label">
                   Correo electrónico <span style={{ color: '#EF4444' }}>*</span>
@@ -126,7 +128,7 @@ const Login: React.FC = () => {
                   placeholder="Correo electrónico"
                   required
                 />
-                <small>Por favor, introduce tu correo electrónico</small>
+                <small>Ejemplo: nombre@gmail.com</small>
               </div>
 
               <div className="input-group">
